@@ -1,0 +1,56 @@
+.graph-container {
+  width: 100%;
+  height: 100vh;
+  background: #1e1e1e;
+}
+
+.react-flow {
+  background: #1e1e1e;
+}
+
+.react-flow__node {
+  background: transparent;
+  border: none;
+  color: #cfcfcf;
+  font-size: 13px;
+  text-align: center;
+  box-shadow: none;
+}
+
+.react-flow__node-default {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.react-flow__node-default::before {
+  content: "";
+  display: block;
+  width: 12px;
+  height: 12px;
+  margin: 0 auto 8px;
+  border-radius: 999px;
+  background: #d0d0d0;
+}
+
+.react-flow__edge-path {
+  stroke: #555;
+  stroke-width: 1;
+}
+
+.react-flow__handle {
+  display: none;
+}
+
+.react-flow__controls,
+.react-flow__minimap {
+  display: none;
+}
+
+.react-flow__attribution {
+  display: none;
+}
+
+.react-flow__background {
+  opacity: 0.15;
+}
