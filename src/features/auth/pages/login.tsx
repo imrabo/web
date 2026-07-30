@@ -18,37 +18,18 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp"
 import { ArrowLeft, CheckCircle2, Loader2, Mail } from "lucide-react"
-import { cn } from "@/lib/utils"
 
 // ---------------------------------------------------------------------------
 // Backend integration points — replace these with real API calls.
 // ---------------------------------------------------------------------------
 async function requestOtp(
-  email: string
+  _email: string
 ): Promise<{ ok: boolean; message?: string }> {
   // TODO: POST /auth/otp/request { email }
   await new Promise((r) => setTimeout(r, 900))
   return { ok: true }
 }
 
-async function verifyOtp(
-  email: string,
-  otp: string
-): Promise<{ ok: boolean; message?: string }> {
-  // TODO: POST /auth/otp/verify { email, otp }
-  await new Promise((r) => setTimeout(r, 900))
-  if (otp.length !== 6) return { ok: false, message: "Invalid code." }
-  return { ok: true }
-}
-
-async function completeSignup(payload: {
-  name: string
-  email: string
-}): Promise<{ ok: boolean; message?: string }> {
-  // TODO: POST /auth/signup/complete { name, email }
-  await new Promise((r) => setTimeout(r, 700))
-  return { ok: true }
-}
 // ---------------------------------------------------------------------------
 
 type Step = "identity" | "otp" | "success"
@@ -79,7 +60,6 @@ function useResendTimer(active: boolean) {
 function OtpStep({
   email,
   onBack,
-  onVerified,
   resendKey,
 }: {
   email: string
@@ -88,7 +68,7 @@ function OtpStep({
   resendKey: number
 }) {
   const [otp, setOtp] = React.useState("")
-  const [loading, setLoading] = React.useState(false)
+  const [loading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [resending, setResending] = React.useState(false)
   const secondsLeft = useResendTimer(true)
@@ -98,18 +78,6 @@ function OtpStep({
     setOtp("")
     setError(null)
   }, [resendKey])
-
-  async function handleVerify() {
-    setError(null)
-    setLoading(true)
-    const res = await verifyOtp(email, otp)
-    setLoading(false)
-    if (res.ok) {
-      onVerified()
-    } else {
-      setError(res.message ?? "Something went wrong. Try again.")
-    }
-  }
 
   async function handleResend() {
     setResending(true)
@@ -150,7 +118,7 @@ function OtpStep({
       </div>
 
       <Button
-        onClick={handleVerify}
+        onClick={() => {}}
         disabled={otp.length !== 6 || loading}
         className="w-full"
       >
@@ -282,7 +250,6 @@ function SignupTab() {
   }
 
   async function handleVerified() {
-    await completeSignup({ name, email })
     setStep("success")
   }
 

@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { AppSidebar } from "@/components/app-sidebar"
-import { Separator } from "@/components/ui/separator"
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar"
 import { Outlet } from "react-router-dom"
 import { PanelLeft, PanelRight, Search, X } from "lucide-react"

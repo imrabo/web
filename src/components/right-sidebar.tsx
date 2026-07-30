@@ -73,7 +73,7 @@ export function RightSidebar({
             <SidebarMenu>
               {data.sidebar.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton>
                     <button className="flex items-center gap-2">
                       <item.icon className="size-4" />
                       <span>{item.title}</span>
@@ -93,7 +93,7 @@ export function RightSidebar({
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton>
               <button className="flex w-full items-center gap-2">
                 <Settings className="size-4" />
                 <span>Settings</span>

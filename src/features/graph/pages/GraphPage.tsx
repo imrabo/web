@@ -2,8 +2,6 @@
 
 import { useCallback, useEffect } from "react"
 import {
-  Background,
-  BackgroundVariant,
   ReactFlow,
   ReactFlowProvider,
   useNodesState,
