@@ -1,22 +1,19 @@
 /**
- * API Client
- *
- * Responsibilities:
- * - Make HTTP requests to the FastAPI backend
- * - Attach the in-memory access token
- * - Send HttpOnly cookies
- * - Normalize API errors
- * - Automatically refresh the access token after a 401
- * - Retry the failed request once
+ * HTTP Client & Response Utilities
+ * Standardized API communication patterns
  */
 
-export interface ApiResponse<T = unknown> {
+
+/**
+ * Standard API Response Format
+ */
+export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
   error?: {
     code: string;
     message: string;
-    details?: Record<string, unknown>;
+    details?: Record<string, any>;
   };
   meta?: {
     timestamp: string;
@@ -30,12 +27,155 @@ export interface ApiResponse<T = unknown> {
   };
 }
 
+/**
+ * HTTP Client for API calls
+ */
+export class ApiClient {
+  private baseUrl: string;
+  private timeout: number = 30000;
+
+  constructor(baseUrl: string = import.meta.env.VITE_PUBLIC_API_URL) {
+    this.baseUrl = baseUrl;
+  }
+
+  /**
+  * Make HTTP request with error handling
+  */
+  private async request<T>(
+    endpoint: string,
+    method: 'GET' | 'POST' | 'PATCH' | 'DELETE' = 'GET',
+    data?: unknown
+  ): Promise<T> {
+    try {
+      const url = `${this.baseUrl}${endpoint}`;
+
+      const options: RequestInit = {
+        method,
+        credentials: 'include', // Send HttpOnly session cookie
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(this.timeout),
+      };
+
+      if (data !== undefined && method !== 'GET') {
+        options.body = JSON.stringify(data);
+      }
+
+      const response = await fetch(url, options);
+
+      // Handle empty responses (204 No Content)
+      if (response.status === 204) {
+        return undefined as T;
+      }
+
+      const contentType = response.headers.get('content-type');
+
+      const body =
+        contentType?.includes('application/json')
+          ? ((await response.json()) as ApiResponse<T> | T)
+          : undefined;
+
+      const isEnvelope =
+        typeof body === 'object' &&
+        body !== null &&
+        'success' in body;
+
+      if (!response.ok) {
+        const errorBody = isEnvelope
+          ? (body as ApiResponse<T>)
+          : undefined;
+
+        throw new ApiError(
+          errorBody?.error?.message || response.statusText || `HTTP ${response.status}`,
+          response.status,
+          errorBody?.error?.code || 'HTTP_ERROR',
+          errorBody?.error?.details
+        );
+      }
+
+      if (isEnvelope) {
+        const apiResponse = body as ApiResponse<T>;
+
+        if (!apiResponse.success) {
+          throw new ApiError(
+            apiResponse.error?.message || 'Request failed',
+            response.status,
+            apiResponse.error?.code || 'API_ERROR',
+            apiResponse.error?.details
+          );
+        }
+
+        return apiResponse.data as T;
+      }
+
+      return body as T;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+
+      throw new ApiError(
+        error instanceof Error ? error.message : 'Unknown error',
+        500,
+        'UNKNOWN_ERROR'
+      );
+    }
+  }
+
+  /**
+   * GET request
+   */
+  async get<T>(endpoint: string): Promise<T> {
+    return this.request<T>(endpoint, 'GET');
+  }
+
+  /**
+   * POST request
+   */
+  async post<T>(endpoint: string, data: any): Promise<T> {
+    return this.request<T>(endpoint, 'POST', data);
+  }
+
+  /**
+   * PATCH request
+   */
+  async patch<T>(endpoint: string, data: any): Promise<T> {
+    return this.request<T>(endpoint, 'PATCH', data);
+  }
+
+  /**
+   * DELETE request
+   */
+  async delete<T>(endpoint: string): Promise<T> {
+    return this.request<T>(endpoint, 'DELETE');
+  }
+
+  /**
+   * Get with query parameters
+   */
+  async getWithQuery<T>(
+    endpoint: string,
+    params?: Record<string, string | number | boolean | Date>
+  ): Promise<T> {
+    const queryString = params
+      ? `?${new URLSearchParams(
+        Object.entries(params).map(([key, value]) => [key, String(value)])
+      ).toString()}`
+      : '';
+    return this.get<T>(`${endpoint}${queryString}`);
+  }
+}
+
+/**
+ * Custom API Error class
+ */
 export class ApiError extends Error {
   constructor(
     message: string,
     public statusCode: number = 500,
     public code: string = 'API_ERROR',
-    public details?: Record<string, unknown>,
+    public details?: Record<string, any>
   ) {
     super(message);
     this.name = 'ApiError';
@@ -43,362 +183,139 @@ export class ApiError extends Error {
 }
 
 /**
- * In-memory access token.
- *
- * Do NOT store the access token in localStorage.
+ * Response builder for consistent API responses
  */
-let accessToken: string | null = null;
-
-export const tokenStore = {
-  get(): string | null {
-    return accessToken;
-  },
-
-  set(token: string): void {
-    accessToken = token;
-  },
-
-  clear(): void {
-    accessToken = null;
-  },
-};
-
-type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
-
-interface RequestOptions {
-  method?: HttpMethod;
-  data?: unknown;
-  retry?: boolean;
-}
-
-export class ApiClient {
-  private readonly baseUrl: string;
-  private readonly timeout = 30_000;
-
-  private refreshPromise: Promise<string | null> | null = null;
-
-  constructor(
-    baseUrl: string =
-      import.meta.env.VITE_PUBLIC_API_URL ??
-      'http://localhost:8000/api/v1',
-  ) {
-    this.baseUrl = baseUrl;
-  }
-
+export class ResponseBuilder {
   /**
-   * Make an HTTP request.
+   * Build success response
    */
-  private async request<T>(
-    endpoint: string,
-    options: RequestOptions = {},
-  ): Promise<T> {
-    const {
-      method = 'GET',
+  static success<T>(data: T, meta?: any): ApiResponse<T> {
+    return {
+      success: true,
       data,
-      retry = true,
-    } = options;
-
-    const url = `${this.baseUrl}${endpoint}`;
-
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
+      meta: {
+        timestamp: new Date().toISOString(),
+        version: 'v1',
+        ...meta,
+      },
     };
+  }
 
-    const token = tokenStore.get();
+  /**
+   * Build error response
+   */
+  static error(
+    message: string,
+    code: string = 'ERROR',
+    statusCode: number = 400,
+    details?: Record<string, any>
+  ): [ApiResponse, number] {
+    return [
+      {
+        success: false,
+        error: {
+          code,
+          message,
+          details,
+        },
+        meta: {
+          timestamp: new Date().toISOString(),
+          version: 'v1',
+        },
+      },
+      statusCode,
+    ];
+  }
 
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-
-    const requestOptions: RequestInit = {
-      method,
-      credentials: 'include',
-      headers,
-      signal: AbortSignal.timeout(this.timeout),
+  /**
+   * Build paginated response
+   */
+  static paginated<T>(items: T[], total: number, page: number, pageSize: number): ApiResponse<T[]> {
+    const totalPages = Math.ceil(total / pageSize);
+    return {
+      success: true,
+      data: items,
+      meta: {
+        timestamp: new Date().toISOString(),
+        version: 'v1',
+        pagination: {
+          total,
+          page,
+          pageSize,
+          totalPages,
+        },
+      },
     };
-
-    if (data !== undefined && method !== 'GET') {
-      requestOptions.body = JSON.stringify(data);
-    }
-
-    try {
-      const response = await fetch(url, requestOptions);
-
-      /**
-       * Access token expired.
-       *
-       * Ask backend for a new access token using
-       * the HttpOnly refresh-token cookie.
-       */
-      if (
-        response.status === 401 &&
-        retry &&
-        !endpoint.includes('/auth/refresh')
-      ) {
-        const newToken = await this.refreshAccessToken();
-
-        if (newToken) {
-          return this.request<T>(endpoint, {
-            ...options,
-            retry: false,
-          });
-        }
-
-        tokenStore.clear();
-      }
-
-      if (response.status === 204) {
-        return undefined as T;
-      }
-
-      const contentType =
-        response.headers.get('content-type') ?? '';
-
-      const body = contentType.includes('application/json')
-        ? await response.json()
-        : undefined;
-
-      if (!response.ok) {
-        throw this.createApiError(response, body);
-      }
-
-      /**
-       * Backend uses:
-       *
-       * {
-       *   success: true,
-       *   data: ...
-       * }
-       */
-      if (this.isApiResponse(body)) {
-        if (!body.success) {
-          throw new ApiError(
-            body.error?.message ?? 'Request failed',
-            response.status,
-            body.error?.code ?? 'API_ERROR',
-            body.error?.details,
-          );
-        }
-
-        return body.data as T;
-      }
-
-      /**
-       * Also support normal JSON responses.
-       */
-      return body as T;
-    } catch (error) {
-      if (error instanceof ApiError) {
-        throw error;
-      }
-
-      if (error instanceof DOMException && error.name === 'TimeoutError') {
-        throw new ApiError(
-          'Request timed out',
-          408,
-          'REQUEST_TIMEOUT',
-        );
-      }
-
-      throw new ApiError(
-        error instanceof Error
-          ? error.message
-          : 'Network request failed',
-        0,
-        'NETWORK_ERROR',
-      );
-    }
-  }
-
-  /**
-   * Refresh access token.
-   *
-   * The refresh token is stored in an HttpOnly cookie,
-   * therefore the browser sends it automatically.
-   */
-  private async refreshAccessToken(): Promise<string | null> {
-    /**
-     * Prevent multiple simultaneous refresh requests.
-     *
-     * Example:
-     *
-     * Request A -> 401
-     * Request B -> 401
-     * Request C -> 401
-     *
-     * Only ONE refresh request should be sent.
-     */
-    if (this.refreshPromise) {
-      return this.refreshPromise;
-    }
-
-    this.refreshPromise = (async () => {
-      try {
-        const response = await fetch(
-          `${this.baseUrl}/auth/refresh`,
-          {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          },
-        );
-
-        if (!response.ok) {
-          tokenStore.clear();
-          return null;
-        }
-
-        const body = await response.json();
-
-        const token =
-          body.access_token ??
-          body.data?.access_token;
-
-        if (!token) {
-          tokenStore.clear();
-          return null;
-        }
-
-        tokenStore.set(token);
-
-        return token;
-      } catch {
-        tokenStore.clear();
-        return null;
-      } finally {
-        this.refreshPromise = null;
-      }
-    })();
-
-    return this.refreshPromise;
-  }
-
-  /**
-   * Determine whether response follows ApiResponse format.
-   */
-  private isApiResponse(
-    body: unknown,
-  ): body is ApiResponse {
-    return (
-      typeof body === 'object' &&
-      body !== null &&
-      'success' in body
-    );
-  }
-
-  /**
-   * Convert HTTP error response to ApiError.
-   */
-  private createApiError(
-    response: Response,
-    body: unknown,
-  ): ApiError {
-    if (this.isApiResponse(body)) {
-      return new ApiError(
-        body.error?.message ??
-        response.statusText ??
-        'Request failed',
-        response.status,
-        body.error?.code ?? 'HTTP_ERROR',
-        body.error?.details,
-      );
-    }
-
-    return new ApiError(
-      response.statusText ||
-      `HTTP ${response.status}`,
-      response.status,
-      'HTTP_ERROR',
-    );
-  }
-
-  /**
-   * GET
-   */
-  async get<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint);
-  }
-
-  /**
-   * POST
-   */
-  async post<T>(
-    endpoint: string,
-    data?: unknown,
-  ): Promise<T> {
-    return this.request<T>(endpoint, {
-      method: 'POST',
-      data,
-    });
-  }
-
-  /**
-   * PUT
-   */
-  async put<T>(
-    endpoint: string,
-    data?: unknown,
-  ): Promise<T> {
-    return this.request<T>(endpoint, {
-      method: 'PUT',
-      data,
-    });
-  }
-
-  /**
-   * PATCH
-   */
-  async patch<T>(
-    endpoint: string,
-    data?: unknown,
-  ): Promise<T> {
-    return this.request<T>(endpoint, {
-      method: 'PATCH',
-      data,
-    });
-  }
-
-  /**
-   * DELETE
-   */
-  async delete<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, {
-      method: 'DELETE',
-    });
-  }
-
-  /**
-   * GET with query parameters.
-   */
-  async getWithQuery<T>(
-    endpoint: string,
-    params?: Record<
-      string,
-      string | number | boolean | Date | null | undefined
-    >,
-  ): Promise<T> {
-    if (!params) {
-      return this.get<T>(endpoint);
-    }
-
-    const searchParams = new URLSearchParams();
-
-    for (const [key, value] of Object.entries(params)) {
-      if (value !== null && value !== undefined) {
-        searchParams.set(key, String(value));
-      }
-    }
-
-    const queryString = searchParams.toString();
-
-    return this.get<T>(
-      queryString
-        ? `${endpoint}?${queryString}`
-        : endpoint,
-    );
   }
 }
 
+/**
+ * Validation error response builder
+ */
+export class ValidationErrorBuilder {
+  private errors: Record<string, string[]> = {};
+
+  addError(field: string, message: string): this {
+    if (!this.errors[field]) {
+      this.errors[field] = [];
+    }
+    this.errors[field].push(message);
+    return this;
+  }
+
+  hasErrors(): boolean {
+    return Object.keys(this.errors).length > 0;
+  }
+
+  build(): [ApiResponse, number] {
+    return ResponseBuilder.error('Validation failed', 'VALIDATION_ERROR', 422, this.errors);
+  }
+}
+
+/**
+ * Instance
+ */
 export const apiClient = new ApiClient();
+
+/**
+ * Usage Examples:
+ *
+ * // GET request
+ * const response = await apiClient.get<User>('/users/123');
+ * if (response.success) {
+ *   console.log(response.data);
+ * }
+ *
+ * // POST request
+ * const createResponse = await apiClient.post<User>('/users', {
+ *   firstName: 'John',
+ *   email: 'john@example.com'
+ * });
+ *
+ * // In API route
+ * export async function POST(req: NextRequest) {
+ *   try {
+ *     const body = await req.json();
+ *     const result = await someService.create(body);
+ *     return NextResponse.json(ResponseBuilder.success(result));
+ *   } catch (error) {
+ *     const [response, status] = ResponseBuilder.error(
+ *       error.message,
+ *       'CREATE_ERROR'
+ *     );
+ *     return NextResponse.json(response, { status });
+ *   }
+ * }
+ *
+ * // In component with error handling
+ * try {
+ *   const response = await apiClient.post('/users', userData);
+ *   if (response.success) {
+ *     console.log('User created:', response.data);
+ *   }
+ * } catch (error) {
+ *   if (error instanceof ApiError) {
+ *     console.error(`Error ${error.statusCode}:`, error.message);
+ *   }
+ * }
+ */

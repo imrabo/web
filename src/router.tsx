@@ -1,10 +1,9 @@
-import { createBrowserRouter } from "react-router-dom"
+import { createBrowserRouter, Navigate } from "react-router-dom"
+
 import AppLayout from "./components/layouts/app-layout"
+
 import ChatPage from "./features/chat/pages/ChatPage"
 import GraphPage from "./features/graph/pages/GraphPage"
-<<<<<<< Updated upstream
-import AuthPage from "./features/auth/pages/login"
-=======
 
 import DocsPage from "./pages/DocsPage"
 
@@ -22,16 +21,15 @@ import HttpPage from "./pages/docs/HttpPage"
 import WebHookPage from "./pages/docs/WebHookPage"
 import McpPage from "./pages/docs/McpPage"
 
-import PricingPage from "./features/payments/pages/PricingPage"
 import { useAuth } from "./features/auth/hooks/useAuth"
+import PricingPage from "./features/payments/pages/PricingPage"
 
 // =====================================================
 // ROOT PAGE
 // =====================================================
 
 function RootPage() {
-  const { user: currentUser } = useAuth()
-  const isAuthenticated = !!currentUser
+  const { isAuthenticated } = useAuth()
 
   // User is logged in
   if (isAuthenticated) {
@@ -39,7 +37,7 @@ function RootPage() {
   }
 
   // User is not logged in
-  return <HomePage /> // Make sure to import HomePage at the top
+  return <HomePage />
 }
 
 // =====================================================
@@ -47,8 +45,7 @@ function RootPage() {
 // =====================================================
 
 function ProtectedRoute() {
-  const { user: currentUser } = useAuth()
-  const isAuthenticated = !!currentUser
+  const { isAuthenticated } = useAuth()
 
   // Not logged in
   if (!isAuthenticated) {
@@ -62,25 +59,104 @@ function ProtectedRoute() {
 // =====================================================
 // ROUTER
 // =====================================================
->>>>>>> Stashed changes
 
 export const router = createBrowserRouter([
+  // ===================================================
+  // HOME
+  // ===================================================
+
   {
     path: "/",
-    element: <AppLayout />,
+    element: <RootPage />,
+  },
+
+  // ===================================================
+  // AUTH
+  // ===================================================
+
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+
+  {
+    path: "/signup",
+    element: <SignupPage />,
+  },
+
+  // ===================================================
+  // LEGAL PAGES
+  // ===================================================
+
+  {
+    path: "/terms",
+    element: <TermsPage />,
+  },
+
+  {
+    path: "/privacy",
+    element: <PrivacyPage />,
+  },
+
+  {
+    path: "/refund-policy",
+    element: <RefundPolicyPage />,
+  },
+
+  // ===================================================
+  // DOCUMENTATION
+  // ===================================================
+
+  {
+    path: "/docs",
     children: [
       {
         index: true,
+        element: <DocsPage />,
+      },
+
+      {
+        path: "connectors",
+        element: <ConnectorsPage />,
+      },
+
+      {
+        path: "http",
+        element: <HttpPage />,
+      },
+
+      {
+        path: "mcp",
+        element: <McpPage />,
+      },
+
+      {
+        path: "webhooks",
+        element: <WebHookPage />,
+      },
+    ],
+  },
+
+  // ===================================================
+  // PROTECTED DASHBOARD
+  // ===================================================
+
+  {
+    element: <ProtectedRoute />,
+    children: [
+      {
+        path: "/dashboard",
         element: <ChatPage />,
       },
+
       {
-        path: "graph",
+        path: "/graph",
         element: <GraphPage />,
       },
     ],
   },
   {
-    path: "/login",
-    element: <AuthPage />,
+    path: "/pricing",
+    element: <PricingPage />,
   },
 ])

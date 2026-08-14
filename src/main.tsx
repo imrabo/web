@@ -5,6 +5,12 @@ import "./index.css"
 import App from "./App.tsx"
 import { ThemeProvider } from "@/components/theme-provider.tsx"
 
+import { registerSW } from "virtual:pwa-register"
+
+registerSW({
+  immediate: true,
+})
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider defaultTheme="system">

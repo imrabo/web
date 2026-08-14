@@ -6,8 +6,7 @@ import { Outlet } from "react-router-dom";
 
 export function ToolTipProvider() {
   return (
-    <TooltipProvider
-    >
+    <TooltipProvider>
       <Outlet />
     </TooltipProvider>
   );

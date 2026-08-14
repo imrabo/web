@@ -26,7 +26,11 @@ export enum MfaMethod {
 import type { Gender, MembershipType, UserPreferences, UserType } from "@/features/users";
 
 export interface RegistrationRequest {
+<<<<<<< HEAD
     name: string;
+=======
+    fullName: string;
+>>>>>>> d1b3273a40bade3ada722899f90296323b1a3854
     email: string;
     mobileNo: string;
     password: string;

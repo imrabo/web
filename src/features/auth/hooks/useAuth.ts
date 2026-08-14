@@ -1,16 +1,13 @@
-import { useCurrentUserQuery } from "./useAuthQuery";
+import type { AuthContextType } from "@/providers/AuthProvider";
+import { useContext } from "react";
+import { AuthContext } from "@/providers/AuthProvider";
 
-export const useAuth = () => {
-    const {
-        data: user,
-        isLoading,
-        isError,
-    } = useCurrentUserQuery();
+export function useAuth(): AuthContextType {
+    const context = useContext(AuthContext);
 
-    return {
-        user: user ?? null,
-        isAuthenticated: Boolean(user),
-        isLoading,
-        isError,
-    };
-};
+    if (!context) {
+        throw new Error("useAuth must be used within an AuthProvider");
+    }
+
+    return context;
+}
