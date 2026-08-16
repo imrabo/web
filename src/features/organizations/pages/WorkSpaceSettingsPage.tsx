@@ -1,3 +1,3 @@
 export const WorkSpaceSettingsPage: React.FC = () => {
-  return <div>Workspace Settings page</div>
+  return <div>WorkSpace Settings page</div>
 }

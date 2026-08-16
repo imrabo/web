@@ -2,24 +2,24 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { toast } from 'sonner';
 import { COLLECTIONS } from '@/lib/constants/COLLECTIONS';
-import { communitiesService } from '../services/communityService';
-import type { ICommunity } from '../types';
+import { workspacesService } from '../services/workspaceService';
+import type { IWorkSpace } from '../types';
 
-export const useOrganizationsQuery = () => {
+export const useWorkspacesQuery = () => {
   return useQuery({
     queryKey: [COLLECTIONS.COMMUNITIES],
     queryFn: async () => {
-      return await communitiesService.fetchOrganizations();
+      return await workspacesService.fetchWorkSpaces();
     },
   });
 };
 
-// export const useOrganizationsQuery = () => {
+// export const useWorkspacesQuery = () => {
 //   return useQuery({
 //     queryKey: [COLLECTIONS.COMMUNITIES],
 //     queryFn: async () => {
 //       const [data] = await Promise.all([
-//         communitiesService.fetchOrganizations(),
+//         workspacesService.fetchWorkspaces(),
 
 //       ]);
 //       return { data };
@@ -27,14 +27,14 @@ export const useOrganizationsQuery = () => {
 //   });
 // };
 
-export const useCreateCommunityMutation = () => {
+export const useCreateWorkSpaceMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: any) => communitiesService.createCommunity(data),
+    mutationFn: (data: any) => workspacesService.createWorkSpace(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [COLLECTIONS.COMMUNITIES] });
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'stats'] });
-      toast.success('Neighborhood Community created successfully');
+      toast.success('Neighborhood WorkSpace created successfully');
     },
     onError: (err: any) => {
       toast.error(err.message || 'Failed to create community group');
@@ -42,14 +42,14 @@ export const useCreateCommunityMutation = () => {
   });
 };
 
-export const useDeleteCommunityMutation = () => {
+export const useDeleteWorkSpaceMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => communitiesService.deleteCommunity(id),
+    mutationFn: (id: string) => workspacesService.deleteWorkSpace(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [COLLECTIONS.COMMUNITIES] });
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'stats'] });
-      toast.success('Community group removed');
+      toast.success('WorkSpace group removed');
     },
     onError: (err: any) => {
       toast.error(err.message || 'Failed to delete community group');
@@ -57,15 +57,15 @@ export const useDeleteCommunityMutation = () => {
   });
 };
 
-export const useCommunityQuery = (id: string) => {
+export const useWorkSpaceQuery = (id: string) => {
   return useQuery({
     queryKey: [COLLECTIONS.COMMUNITIES, id],
-    queryFn: () => communitiesService.fetchCommunityById(id),
+    queryFn: () => workspacesService.fetchWorkSpaceById(id),
     enabled: !!id,
   });
 };
 
-export const useUpdateCommunityMutation = () => {
+export const useUpdateWorkSpaceMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -74,8 +74,8 @@ export const useUpdateCommunityMutation = () => {
       data,
     }: {
       id: string;
-      data: Partial<ICommunity>;
-    }) => communitiesService.updateCommunity(id, data),
+      data: Partial<IWorkSpace>;
+    }) => workspacesService.updateWorkSpace(id, data),
 
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
@@ -86,7 +86,7 @@ export const useUpdateCommunityMutation = () => {
         queryKey: [COLLECTIONS.COMMUNITIES, variables.id],
       });
 
-      toast.success('Community updated successfully');
+      toast.success('WorkSpace updated successfully');
     },
 
     onError: (err: any) => {

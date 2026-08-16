@@ -23,24 +23,29 @@ export function NavUser() {
           size="lg"
           className="w-full data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
         >
-          <Avatar className="h-8 w-8 border-none">
-            {/* <AvatarImage src={user?.avatar} alt={user?.first_name} /> */}
-            <AvatarFallback className="border-none bg-muted text-muted-foreground">
-              {user?.first_name?.[0]}
-              {user?.last_name?.[0]}
-            </AvatarFallback>
-          </Avatar>
-          <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-medium">
-              {user?.first_name} {user?.last_name}
-            </span>
-            <span className="truncate text-xs">{user?.email}</span>
-          </div>
           <Link
-            to={ROUTES.SETTINGS}
-            className="ml-auto flex items-center space-x-2"
+            to={`${user?.username}`}
+            className="flex w-full items-center space-x-2"
           >
-            <Settings className="ml-auto size-4" />
+            <Avatar className="h-8 w-8 border-none">
+              {/* <AvatarImage src={user?.avatar} alt={user?.first_name} /> */}
+              <AvatarFallback className="border-none bg-muted text-muted-foreground">
+                {user?.first_name?.[0]}
+                {user?.last_name?.[0]}
+              </AvatarFallback>
+            </Avatar>
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-medium">
+                {user?.first_name} {user?.last_name}
+              </span>
+              <span className="truncate text-xs">{user?.email}</span>
+            </div>
+            <Link
+              to={`${user?.username}/${ROUTES.SETTINGS}`}
+              className="ml-auto flex items-center space-x-2"
+            >
+              <Settings className="ml-auto size-4" />
+            </Link>
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>

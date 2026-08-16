@@ -1,31 +1,24 @@
-import React, { useState } from "react";
+import React, { useState } from "react"
 
 import {
-  useOrganizationsQuery,
-  useCreateCommunityMutation,
-  useDeleteCommunityMutation,
-} from "../hooks/useCommunity";
-import { DataTable } from "@/components/tables/DataTable";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+  useWorkSpacesQuery,
+  useCreateWorkSpaceMutation,
+  useDeleteWorkSpaceMutation,
+} from "../hooks/useWorkSpace"
+import { DataTable } from "@/components/tables/DataTable"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog"
 
-import {
-  ICommunityAccessType,
-  ICommunityStatus,
-  ICommunityType,
-  ICommunityVisibility,
-  type ICommunity,
-} from "../types";
 
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"
 import {
   MoreHorizontal,
   Eye,
@@ -35,7 +28,7 @@ import {
   BarChart3,
   Trash2,
   PlusCircle,
-} from "lucide-react";
+} from "lucide-react"
 
 import {
   DropdownMenu,
@@ -43,27 +36,29 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import type { ColumnDef } from "@tanstack/react-table";
+} from "@/components/ui/dropdown-menu"
+import type { ColumnDef } from "@tanstack/react-table"
+import type { WorkSpace } from "../schemas"
+import { IWorkSpaceVisibility, type IWorkSpace } from "../types"
 
-export const OrganizationsPage: React.FC = () => {
-  const { data, isLoading } = useOrganizationsQuery();
-  const createGroupMutation = useCreateCommunityMutation();
-  const deleteGroupMutation = useDeleteCommunityMutation();
+export const WorkSpacesPage: React.FC = () => {
+  const { data, isLoading } = useWorkSpacesQuery()
+  const createGroupMutation = useCreateWorkSpaceMutation()
+  const deleteGroupMutation = useDeleteWorkSpaceMutation()
 
-  const [isGroupOpen, setIsGroupOpen] = useState(false);
+  const [isGroupOpen, setIsGroupOpen] = useState(false)
 
-  const router = useNavigate();
+  const router = useNavigate()
 
   // Group Form state
-  const [groupName, setGroupName] = useState("");
-  const [groupDesc, setGroupDesc] = useState("");
-  const [groupCat] = useState("Neighborhood");
+  const [groupName, setGroupName] = useState("")
+  const [groupDesc, setGroupDesc] = useState("")
+  const [groupCat] = useState("Neighborhood")
 
   const handleGroupSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!groupName) return;
-    createGroupMutation.mutate(
+    e.preventDefault()
+    if (!groupName) return
+    createGroupMutation.mutate<WorkSpace>(
       {
         name: groupName,
         description: groupDesc,
@@ -71,23 +66,20 @@ export const OrganizationsPage: React.FC = () => {
         memberCount: 1,
         adminId: "usr-001", // Assigned to Super Admin for mock
         userIds: ["usr-001"],
-        type: ICommunityType.Family,
-        accessType: ICommunityAccessType.Free,
-        visibility: ICommunityVisibility.Public,
-        status: ICommunityStatus.Active,
+      
       },
       {
         onSuccess: () => {
-          setIsGroupOpen(false);
-          setGroupName("");
-          setGroupDesc("");
+          setIsGroupOpen(false)
+          setGroupName("")
+          setGroupDesc("")
         },
-      },
-    );
-  };
+      }
+    )
+  }
 
   // Columns Definitions
-  const columns: ColumnDef<ICommunity>[] = [
+  const columns: ColumnDef<IWorkSpace>[] = [
     {
       id: "serialNo",
       header: "Sr. No.",
@@ -96,13 +88,13 @@ export const OrganizationsPage: React.FC = () => {
 
     {
       accessorKey: "name",
-      header: "Community",
+      header: "WorkSpace",
       cell: ({ row }) => (
         <div className="space-y-1">
-          <p className="text-foreground font-semibold">{row.original.name}</p>
+          <p className="font-semibold text-foreground">{row.original.name}</p>
 
           {row.original.description && (
-            <p className="text-muted-foreground line-clamp-2 text-xs">
+            <p className="line-clamp-2 text-xs text-muted-foreground">
               {row.original.description}
             </p>
           )}
@@ -114,13 +106,13 @@ export const OrganizationsPage: React.FC = () => {
       accessorKey: "type",
       header: "Type",
       cell: ({ row }) => {
-        const type = row.original.type;
+        const type = row.original.type
 
         return (
           <span className="rounded-md bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-600 capitalize">
             {type ? type.replace(/_/g, " ") : "N/A"}
           </span>
-        );
+        )
       },
     },
 
@@ -128,13 +120,13 @@ export const OrganizationsPage: React.FC = () => {
       accessorKey: "accessType",
       header: "Access",
       cell: ({ row }) => {
-        const accessType = row.original.accessType;
+        const accessType = row.original.accessType
 
         return (
           <span className="rounded-md bg-violet-500/10 px-2 py-1 text-xs font-medium text-violet-600 capitalize">
             {accessType ? accessType.replace(/_/g, " ") : "N/A"}
           </span>
-        );
+        )
       },
     },
 
@@ -143,7 +135,7 @@ export const OrganizationsPage: React.FC = () => {
       header: "Visibility",
       cell: ({ row }) => (
         <span className="rounded-md bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-600 capitalize">
-          {row.original.visibility ?? ICommunityVisibility.Public.toString()}
+          {row.original.visibility ?? IWorkSpaceVisibility.Public.toString()}
         </span>
       ),
     },
@@ -152,11 +144,9 @@ export const OrganizationsPage: React.FC = () => {
       accessorKey: "memberCount",
       header: "Members",
       cell: ({ row }) => {
-        const memberCount = row.original.memberCount;
+        const memberCount = row.original.memberCount
 
-        return (
-          <span className="text-sm font-medium">{memberCount ?? "0"}</span>
-        );
+        return <span className="text-sm font-medium">{memberCount ?? "0"}</span>
       },
     },
 
@@ -164,21 +154,21 @@ export const OrganizationsPage: React.FC = () => {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => {
-        const status = row.original.status;
+        const status = row.original.status
 
         const colors = {
           active: "bg-green-500/10 text-green-600",
           archived: "bg-yellow-500/10 text-yellow-600",
           deleted: "bg-red-500/10 text-red-600",
-        };
+        }
 
         return (
           <span
             className={`rounded-md px-2 py-1 text-xs font-medium capitalize ${colors[status]}`}
           >
-            {status ?? ICommunityStatus.Archived.toString()}
+            {status ?? IWorkSpaceStatus.Archived.toString()}
           </span>
-        );
+        )
       },
     },
 
@@ -194,7 +184,7 @@ export const OrganizationsPage: React.FC = () => {
       enableSorting: false,
       enableHiding: false,
       cell: ({ row }) => {
-        const community = row.original;
+        const community = row.original
 
         return (
           <DropdownMenu>
@@ -206,37 +196,37 @@ export const OrganizationsPage: React.FC = () => {
 
             <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuItem>
-                <Link to={`/admin/communities/${community.id}`}>
+                <Link to={`/admin/workspaces/${community.id}`}>
                   <Eye className="mr-2 h-4 w-4" />
                   View Details
                 </Link>
               </DropdownMenuItem>
 
               <DropdownMenuItem>
-                <Link to={`/admin/communities/${community.id}/edit`}>
+                <Link to={`/admin/workspaces/${community.id}/edit`}>
                   <Pencil className="mr-2 h-4 w-4" />
-                  Edit Community
+                  Edit WorkSpace
                 </Link>
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
 
               <DropdownMenuItem>
-                <Link to={`/admin/communities/${community.id}/members`}>
+                <Link to={`/admin/workspaces/${community.id}/members`}>
                   <Users className="mr-2 h-4 w-4" />
                   Manage Members
                 </Link>
               </DropdownMenuItem>
 
               <DropdownMenuItem>
-                <Link to={`/admin/communities/${community.id}/messages`}>
+                <Link to={`/admin/workspaces/${community.id}/messages`}>
                   <MessageCircle className="mr-2 h-4 w-4" />
-                  Community Chats
+                  WorkSpace Chats
                 </Link>
               </DropdownMenuItem>
 
               <DropdownMenuItem>
-                <Link to={`/admin/communities/${community.id}/analytics`}>
+                <Link to={`/admin/workspaces/${community.id}/analytics`}>
                   <BarChart3 className="mr-2 h-4 w-4" />
                   Analytics
                 </Link>
@@ -248,24 +238,24 @@ export const OrganizationsPage: React.FC = () => {
                 className="text-destructive focus:text-destructive"
                 onClick={() => {
                   if (confirm(`Delete "${community.name}"?`)) {
-                    deleteGroupMutation.mutate(community.id);
+                    deleteGroupMutation.mutate(community.id)
                   }
                 }}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete Community
+                Delete WorkSpace
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        );
+        )
       },
     },
-  ];
+  ]
 
-  console.log("OrganizationsPage data:", data);
-  console.log(data);
-  console.log(columns);
-  console.log(data?.length);
+  console.log("WorkSpacesPage data:", data)
+  console.log(data)
+  console.log(columns)
+  console.log(data?.length)
 
   return (
     <div className="animate-fade-in space-y-6 p-6">
@@ -273,10 +263,10 @@ export const OrganizationsPage: React.FC = () => {
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">
-            Community Network
+            WorkSpace Network
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm font-medium">
-            Oversee community neighborhood hubs, verify communities data, and
+          <p className="mt-1 text-sm font-medium text-muted-foreground">
+            Oversee community neighborhood hubs, verify workspaces data, and
             moderate group announcements.
           </p>
         </div>
@@ -300,23 +290,23 @@ export const OrganizationsPage: React.FC = () => {
         // enableSearch
         // enableSorting
 
-        onRowClick={(cmty) => router(`/communities/${cmty.id}`)}
+        onRowClick={(cmty) => router(`/workspaces/${cmty.id}`)}
         toolbar={
           <Button
             onClick={() => setIsGroupOpen(true)}
             // className="flex h-10 items-center gap-2 rounded-xl bg-indigo-600 font-medium text-white shadow-md shadow-indigo-600/10 hover:bg-indigo-700"
           >
-            <PlusCircle className="h-4 w-4" /> Create Community Group
+            <PlusCircle className="h-4 w-4" /> Create WorkSpace Group
           </Button>
         }
       />
 
-      {/* Create Community Group Dialog */}
+      {/* Create WorkSpace Group Dialog */}
       <Dialog open={isGroupOpen} onOpenChange={setIsGroupOpen}>
-        <DialogContent className="bg-card border-border max-w-md rounded-2xl shadow-2xl">
+        <DialogContent className="max-w-md rounded-2xl border-border bg-card shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">
-              Create Community Group
+              Create WorkSpace Group
             </DialogTitle>
             <DialogDescription>
               Add a new local geographic community group for parents.
@@ -326,7 +316,7 @@ export const OrganizationsPage: React.FC = () => {
             <div className="space-y-1">
               <Label
                 htmlFor="gName"
-                className="text-muted-foreground text-xs font-bold tracking-wider uppercase"
+                className="text-xs font-bold tracking-wider text-muted-foreground uppercase"
               >
                 Group Name
               </Label>
@@ -341,7 +331,7 @@ export const OrganizationsPage: React.FC = () => {
             <div className="space-y-1">
               <Label
                 htmlFor="gDesc"
-                className="text-muted-foreground text-xs font-bold tracking-wider uppercase"
+                className="text-xs font-bold tracking-wider text-muted-foreground uppercase"
               >
                 Description
               </Label>
@@ -375,7 +365,7 @@ export const OrganizationsPage: React.FC = () => {
                 </SelectContent>
               </Select>
             </div> */}
-            <div className="border-border/50 flex justify-end gap-2 border-t pt-4">
+            <div className="flex justify-end gap-2 border-t border-border/50 pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -394,7 +384,7 @@ export const OrganizationsPage: React.FC = () => {
         </DialogContent>
       </Dialog>
     </div>
-  );
-};
+  )
+}
 
-export default OrganizationsPage;
+export default WorkSpacesPage

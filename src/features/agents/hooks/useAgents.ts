@@ -51,7 +51,7 @@ export const useUpdateAgentMutation = () => {
     mutationFn: ({ id, data }: { id: string; data: any }) => agentsService.updateAgent(id, data),
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ['agents-data'] });
-      toast.success(`Updated details for agent: ${updated.title}`);
+      toast.success(`Updated details for agent: ${updated.data?.title}`);
     },
     onError: (err: any) => {
       toast.error(err.message || 'Failed to update agent event');

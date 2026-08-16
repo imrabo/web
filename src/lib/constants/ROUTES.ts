@@ -6,8 +6,8 @@ export const ROUTES = {
   USERS: '/users',
   USER_DETAILS: '/users/:id',
 
-  VILLAGES: '/communities',
-  VILLAGE_DETAILS: '/communities/:id',
+  VILLAGES: '/workspaces',
+  VILLAGE_DETAILS: '/workspaces/:id',
 
   HOMESCHOOLING: '/homeschooling',
 
@@ -31,4 +31,14 @@ export const ROUTES = {
   ANALYTICS: '/analytics',
 
   SETTINGS: '/settings',
+
+  CHAT: '/chat',
+  AGENTS: '/agents',
+  MARKETPLACE: '/marketplace',
+  MEMORY: '/memory',
+  INTEGRATIONS: '/integrations',
+  PLUGINS: '/plugins',
+  SKILLS: '/skills',
+  TEMPLATES: '/templates',
+  HOME: '/',
 } as const;

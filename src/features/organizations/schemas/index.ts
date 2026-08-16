@@ -1,32 +1,71 @@
 import { z } from 'zod';
 
-import {
-  ICommunityAccessType,
-  ICommunityStatus,
-  ICommunityType,
-  ICommunityVisibility,
-} from '../types';
+/**
+ * WorkSpace visibility options.
+ */
+export enum WorkSpaceVisibility {
+  Private = 'private',
+  Shared = 'shared',
+}
 
-export const createCommunitySchema = z.object({
-  name: z.string().min(2),
-  description: z.string().max(2_000).optional(),
-  type: z.nativeEnum(ICommunityType).default(ICommunityType.Family),
-  category: z.string().min(1).optional(),
-  accessType: z.nativeEnum(ICommunityAccessType).default(ICommunityAccessType.Free),
-  price: z.number().nonnegative().optional(),
-  currency: z.string().length(3).optional(),
-  userIds: z.array(z.string()).default([]),
-  memberCount: z.number().int().nonnegative().default(0),
-  adminId: z.string().min(1),
-  adminIds: z.array(z.string()).optional(),
-  imageUrl: z.string().url().optional(),
-  coverImageUrl: z.string().url().optional(),
-  iconUrl: z.string().url().optional(),
-  visibility: z.nativeEnum(ICommunityVisibility).default(ICommunityVisibility.Public),
-  status: z.nativeEnum(ICommunityStatus).default(ICommunityStatus.Active),
+/**
+ * WorkSpace lifecycle status.
+ */
+export enum WorkSpaceStatus {
+  Active = 'active',
+  Archived = 'archived',
+  Deleted = 'deleted',
+}
+
+/**
+ * Additional workspace metadata.
+ */
+export const WorkSpaceMetadataSchema = z.record(
+  z.string(),
+  z.unknown(),
+);
+
+/**
+ * WorkSpace schema.
+ */
+export const WorkSpaceSchema = z.object({
+  /** Database primary key */
+  id: z.number().int().positive(),
+
+  /** WorkSpace information */
+  name: z.string().min(1).max(150),
+
+  slug: z.string().min(1).max(150),
+
+  description: z.string().max(1000),
+
+  logoUrl: z.string().max(500),
+
+  /** WorkSpace ownership */
+  ownerId: z.number().int().positive(),
+
+  /** WorkSpace configuration */
+  visibility: z.nativeEnum(WorkSpaceVisibility),
+
+  status: z.nativeEnum(WorkSpaceStatus),
+
+  defaultModel: z.string().max(100).nullable().optional(),
+
+  /** Additional workspace metadata */
+  metadata: WorkSpaceMetadataSchema,
+
+  /** Audit information */
+  createdBy: z.number().int().positive(),
+
+  updatedBy: z.number().int().positive(),
+
+  /** Timestamps */
+  createdAt: z.string().datetime(),
+
+  updatedAt: z.string().datetime(),
+
+  /** Soft delete timestamp */
+  deletedAt: z.string().datetime().nullable().optional(),
 });
 
-export const updateCommunitySchema = createCommunitySchema.partial();
-
-export type CreateCommunityDTO = z.infer<typeof createCommunitySchema>;
-export type UpdateCommunityDTO = z.infer<typeof updateCommunitySchema>;
+export type WorkSpace = z.infer<typeof WorkSpaceSchema>;

@@ -8,7 +8,7 @@ export const COLLECTIONS = {
 
     CHILD_PROFILES: 'child_profiles',
 
-    COMMUNITIES: 'communities',
+    COMMUNITIES: 'workspaces',
     GROUPS: 'groups',
 
     GROUP_MEMBERS: 'group_members',

@@ -1,1 +1,1 @@
-export * from './community.types';
+export * from './workspace.types';

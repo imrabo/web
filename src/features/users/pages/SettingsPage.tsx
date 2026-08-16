@@ -97,10 +97,6 @@ export default function SettingsPage() {
     setSaved(false)
 
     try {
-      await onSave?.({
-        password: newPassword,
-      })
-
       setCurrentPassword("")
       setNewPassword("")
       setConfirmPassword("")
@@ -149,7 +145,7 @@ export default function SettingsPage() {
 
       {/* Settings Content */}
       <div className="min-h-0 flex-1 overflow-auto">
-        <div className="mx-auto flex max-w-6xl gap-8 px-6 py-8">
+        <div className="mx-auto flex max-w-6xl gap-8">
           {/* Settings Navigation */}
           <aside className="w-56 shrink-0 border-r">
             <nav className="space-y-1">
@@ -220,7 +216,7 @@ export default function SettingsPage() {
               />
             )}
 
-            {activeSection === "account" && <AccountSettings user={user} />}
+            {activeSection === "account" && <AccountSettings user={user!} />}
           </div>
         </div>
       </div>

@@ -3,75 +3,66 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 
-import {
-  useCommunityQuery,
-  useUpdateCommunityMutation,
-} from "../hooks/useCommunity"
-
-import {
-  ICommunityAccessType,
-  ICommunityStatus,
-  ICommunityType,
-  ICommunityVisibility,
-} from "../types"
-
 // import { Spinner } from "@/components/ui/spinner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { IWorkSpaceStatus, IWorkSpaceVisibility } from "../types"
+import {
+  useUpdateWorkSpaceMutation,
+  useWorkSpaceQuery,
+} from "../hooks/useWorkSpace"
+import type { Workspace } from "../schemas"
 
-export default function CommunityEditPage() {
+export default function WorkSpaceEditPage() {
   const { id } = useParams()
   const router = useNavigate()
 
-  const { data: community, isLoading } = useCommunityQuery(id as string)
+  const { data, isLoading } = useWorkSpaceQuery(id as string)
 
-  const updateCommunity = useUpdateCommunityMutation()
+  const updateWorkSpace = useUpdateWorkSpaceMutation()
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<WorkSpace>({
     name: "",
     description: "",
     category: "",
-    type: ICommunityType.Family,
-    accessType: ICommunityAccessType.Free,
-    visibility: ICommunityVisibility.Public,
-    status: ICommunityStatus.Active,
+    status: IWorkSpaceStatus.Active,
   })
 
   useEffect(() => {
-    if (!community) return
+    if (!data) return
 
     setForm({
-      name: community.name,
-      description: community.description ?? "",
-      category: community.category ?? "",
-      type: community.type,
-      accessType: community.accessType,
-      visibility: community.visibility,
-      status: community.status,
+      name: data.data?.name,
+      description: data.data?.description ?? "",
+      category: data.data?.category ?? "",
+      type: data.data?.type,
+      accessType: data.data?.accessType,
+      visibility: data.data?.visibility,
+      status: data.status,
     })
-  }, [community])
+  }, [data])
 
   if (isLoading) {
     return <div>Loading...</div>
   }
 
-  if (!community) {
-    return <div>Community not found.</div>
+  if (!data) {
+    return <div>WorkSpace not found.</div>
   }
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    updateCommunity.mutate(
+    updateWorkSpace.mutate(
       {
-        id: community.id,
+        id: data.data?.id,
         data: form,
       },
       {
         onSuccess() {
-          router(`/communities/${community.id}`)
+          router(`/workspaces/${data.data?.id}`)
         },
       }
     )
@@ -81,7 +72,7 @@ export default function CommunityEditPage() {
     <div className="mx-auto max-w-4xl p-6">
       <Card>
         <CardHeader>
-          <CardTitle>Edit Community</CardTitle>
+          <CardTitle>Edit WorkSpace</CardTitle>
         </CardHeader>
 
         <CardContent>
@@ -134,15 +125,15 @@ export default function CommunityEditPage() {
 
                 <select
                   className="h-10 w-full rounded-md border px-3"
-                  value={form.type}
+                  value={form}
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      type: e.target.value as ICommunityType,
+                      type: e.target.value as IWorkSpaceType,
                     })
                   }
                 >
-                  {Object.values(ICommunityType).map((value) => (
+                  {Object.values(IWorkSpaceType).map((value) => (
                     <option key={value} value={value}>
                       {value}
                     </option>
@@ -159,11 +150,11 @@ export default function CommunityEditPage() {
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      accessType: e.target.value as ICommunityAccessType,
+                      accessType: e.target.value as IWorkSpaceAccessType,
                     })
                   }
                 >
-                  {Object.values(ICommunityAccessType).map((value) => (
+                  {Object.values(IWorkSpaceAccessType).map((value) => (
                     <option key={value} value={value}>
                       {value}
                     </option>
@@ -180,11 +171,11 @@ export default function CommunityEditPage() {
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      visibility: e.target.value as ICommunityVisibility,
+                      visibility: e.target.value as IWorkSpaceVisibility,
                     })
                   }
                 >
-                  {Object.values(ICommunityVisibility).map((value) => (
+                  {Object.values(IWorkSpaceVisibility).map((value) => (
                     <option key={value} value={value}>
                       {value}
                     </option>
@@ -201,11 +192,11 @@ export default function CommunityEditPage() {
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      status: e.target.value as ICommunityStatus,
+                      status: e.target.value as IWorkSpaceStatus,
                     })
                   }
                 >
-                  {Object.values(ICommunityStatus).map((value) => (
+                  {Object.values(IWorkSpaceStatus).map((value) => (
                     <option key={value} value={value}>
                       {value}
                     </option>
@@ -223,7 +214,7 @@ export default function CommunityEditPage() {
                 Cancel
               </Button>
 
-              <Button type="submit" disabled={updateCommunity.isPending}>
+              <Button type="submit" disabled={updateWorkSpace.isPending}>
                 Save Changes
               </Button>
             </div>

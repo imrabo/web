@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams } from "react-router-dom"
 
 import {
   Card,
@@ -6,12 +6,12 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
 
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Skeleton } from "@/components/ui/skeleton"
 
 import {
   Calendar,
@@ -24,13 +24,13 @@ import {
   Image as ImageIcon,
   Shield,
   Layers,
-} from "lucide-react";
-import { useCommunityQuery } from "../hooks/useCommunity";
+} from "lucide-react"
+import { useCommunityQuery } from "../hooks/useWorkspace"
 
 export default function CommunityDetailsPage() {
-  const { id } = useParams();
+  const { id } = useParams()
 
-  const { data, isLoading } = useCommunityQuery(id as string);
+  const { data, isLoading } = useCommunityQuery(id as string)
 
   if (isLoading) {
     return (
@@ -38,13 +38,13 @@ export default function CommunityDetailsPage() {
         <Skeleton className="h-8 w-60" />
         <Skeleton className="h-80 rounded-xl" />
       </div>
-    );
+    )
   }
 
-  const community = data;
+  const community = data
 
   if (!community) {
-    return <div>Community not found.</div>;
+    return <div>Community not found.</div>
   }
 
   return (
@@ -168,7 +168,7 @@ export default function CommunityDetailsPage() {
 
             <CardContent className="space-y-4">
               <div>
-                <p className="text-muted-foreground text-sm">Created By</p>
+                <p className="text-sm text-muted-foreground">Created By</p>
 
                 <p>{community.createdByAdminId}</p>
               </div>
@@ -176,7 +176,7 @@ export default function CommunityDetailsPage() {
               <Separator />
 
               <div>
-                <p className="text-muted-foreground text-sm">Updated</p>
+                <p className="text-sm text-muted-foreground">Updated</p>
 
                 <p>{community.updatedAt?.toString()}</p>
               </div>
@@ -185,25 +185,25 @@ export default function CommunityDetailsPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 interface Props {
-  icon: React.ReactNode;
-  title: string;
-  value: React.ReactNode;
+  icon: React.ReactNode
+  title: string
+  value: React.ReactNode
 }
 
 function Info({ icon, title, value }: Props) {
   return (
     <div className="flex items-start gap-3">
-      <div className="text-muted-foreground mt-1">{icon}</div>
+      <div className="mt-1 text-muted-foreground">{icon}</div>
 
       <div>
-        <p className="text-muted-foreground text-sm">{title}</p>
+        <p className="text-sm text-muted-foreground">{title}</p>
 
         <p className="font-medium">{value}</p>
       </div>
     </div>
-  );
+  )
 }

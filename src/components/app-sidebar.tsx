@@ -3,18 +3,19 @@
 import * as React from "react"
 import {
   AudioWaveform,
-  BookOpen,
   Bot,
+  Brain,
   Command,
   Frame,
   GalleryVerticalEnd,
-  Home,
+  Layers3,
   LifeBuoy,
   Map,
+  MessageSquare,
   PieChart,
   Send,
   Settings2,
-  SquareTerminal,
+  Store,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -29,7 +30,6 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { ROUTES } from "@/lib/constants/ROUTES"
-import { url } from "zod"
 import { NavSecondary } from "./nav-secondary"
 
 const data = {
@@ -58,32 +58,51 @@ const data = {
   navMain: [
     {
       title: "Overview",
-      url: "/",
-      icon: Home,
-      isActive: true,
+      url: ROUTES.HOME ?? "/",
+      icon: Layers3,
       showItems: false,
     },
+
     {
-      title: "Integrations",
-      icon: SquareTerminal,
-      url: "/integrations",
+      title: "Agents",
+      url: ROUTES.AGENTS ?? "/agents",
+      icon: Bot,
+      showItems: false,
+    },
+
+    {
+      title: "Memory",
+      url: ROUTES.MEMORY ?? "/memory",
+      icon: Brain,
+      showItems: false,
+    },
+
+    {
+      title: "Marketplace",
+      url: ROUTES.MARKETPLACE ?? "/marketplace",
+      icon: Store,
       showItems: true,
+
       items: [
         {
-          title: "Connectors",
-          url: "/connectors",
+          title: "Discover",
+          url: ROUTES.MARKETPLACE ?? "/marketplace",
+        },
+        {
+          title: "Integrations",
+          url: ROUTES.INTEGRATIONS ?? "/integrations",
         },
         {
           title: "Plugins",
-          url: "/plugins",
-        },
-        {
-          title: "Templates",
-          url: "/templates",
+          url: ROUTES.PLUGINS ?? "/plugins",
         },
         {
           title: "Skills",
-          url: "/skills",
+          url: ROUTES.SKILLS ?? "/skills",
+        },
+        {
+          title: "Templates",
+          url: ROUTES.TEMPLATES ?? "/templates",
         },
       ],
     },
@@ -134,7 +153,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavSecondary items={data.navSecondary} />
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter className="w-full border-t">
