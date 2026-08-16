@@ -14,8 +14,8 @@ export enum MessageStatus {
 
 export interface Message {
   id: number;
-  conversationId: number;
-  workspaceId: number;
+  conversation_id: number;
+  workspace_id: number;
 
   role: MessageRole;
   content: string;
@@ -28,8 +28,8 @@ export interface Message {
 }
 
 export interface CreateMessage {
-  conversationId: number;
-  workspaceId: number;
+  conversation_id: number;
+  workspace_id: number;
   role: MessageRole;
   content: string;
   status?: MessageStatus;

@@ -35,11 +35,11 @@ export default function ProfilePage() {
     if (!user) return
 
     setForm({
-      first_name: user.data?.first_name,
-      last_name: user.data?.last_name,
-      username: user.data?.username,
-      email: user.data?.email,
-      phone_number: user.data?.phone_number ?? "",
+      first_name: user?.first_name,
+      last_name: user?.last_name,
+      username: user?.username,
+      email: user?.email,
+      phone_number: user?.phone_number ?? "",
     })
   }, [user])
 
@@ -54,11 +54,11 @@ export default function ProfilePage() {
     if (!user) return
 
     setForm({
-      first_name: user.data?.first_name,
-      last_name: user.data?.last_name,
-      username: user.data?.username,
-      email: user.data?.email,
-      phone_number: user.data?.phone_number ?? "",
+      first_name: user?.first_name,
+      last_name: user?.last_name,
+      username: user?.username,
+      email: user?.email,
+      phone_number: user?.phone_number ?? "",
     })
 
     setIsEditing(false)
@@ -69,7 +69,7 @@ export default function ProfilePage() {
 
     try {
       await updateUserMutation.mutateAsync({
-        id: user.data?.id,
+        id: user?.id,
         data: form,
       })
 
@@ -108,10 +108,10 @@ export default function ProfilePage() {
     )
   }
 
-  const fullName = `${user.data?.first_name} ${user.data?.last_name}`
+  const fullName = `${user?.first_name} ${user?.last_name}`
 
   const initials =
-    `${user.data?.first_name?.[0] ?? ""}${user.data?.last_name?.[0] ?? ""}`.toUpperCase()
+    `${user?.first_name?.[0] ?? ""}${user?.last_name?.[0] ?? ""}`.toUpperCase()
 
   const joinedDate = new Date(user.created_at).toLocaleDateString(undefined, {
     month: "long",

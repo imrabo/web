@@ -8,6 +8,7 @@ import {
   Command,
   Frame,
   GalleryVerticalEnd,
+  Home,
   LifeBuoy,
   Map,
   PieChart,
@@ -27,6 +28,9 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
+import { ROUTES } from "@/lib/constants/ROUTES"
+import { url } from "zod"
+import { NavSecondary } from "./nav-secondary"
 
 const data = {
   user: {
@@ -53,42 +57,42 @@ const data = {
   ],
   navMain: [
     {
-      title: "Connectors",
-      url: "/connectors",
-      icon: SquareTerminal,
+      title: "Overview",
+      url: "/",
+      icon: Home,
       isActive: true,
       showItems: false,
     },
     {
-      title: "Plugins",
-      url: "/plugins",
+      title: "Integrations",
       icon: SquareTerminal,
-
-      showItems: false,
+      url: "/integrations",
+      showItems: true,
+      items: [
+        {
+          title: "Connectors",
+          url: "/connectors",
+        },
+        {
+          title: "Plugins",
+          url: "/plugins",
+        },
+        {
+          title: "Templates",
+          url: "/templates",
+        },
+        {
+          title: "Skills",
+          url: "/skills",
+        },
+      ],
     },
 
     {
       title: "Settings",
-      url: "#",
+      url: ROUTES.SETTINGS,
       icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
+      showItems: false,
     },
   ],
   navSecondary: [
@@ -125,15 +129,16 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="border-b">
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
+        <NavSecondary items={data.navSecondary} />
         <NavProjects projects={data.projects} />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={data.user} />
+      <SidebarFooter className="w-full border-t">
+        <NavUser />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

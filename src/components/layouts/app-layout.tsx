@@ -4,7 +4,7 @@ import * as React from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar"
 import { Outlet } from "react-router-dom"
-import { PanelLeft, PanelRight, Search, X } from "lucide-react"
+import { CommandIcon, PanelLeft, PanelRight, Search, X } from "lucide-react"
 import {
   Command,
   CommandDialog,
@@ -69,8 +69,9 @@ export default function AppLayout() {
         </SidebarProvider>
 
         {/* Main Content */}
+
         <div className="flex w-full min-w-0 flex-1 flex-col">
-          <header className="flex h-16 items-center justify-between px-4">
+          <header className="flex h-16 items-center justify-between border-b px-4">
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
@@ -92,9 +93,14 @@ export default function AppLayout() {
                   <Search className="h-4 w-4" />
                   <span>Search...</span>
                 </div>
-                <kbd className="pointer-events-none inline-flex h-5 items-center rounded border bg-muted px-1.5 text-[10px] font-medium">
-                  ⌘K
-                </kbd>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="flex items-center gap-0.5 transition-colors hover:text-foreground"
+                >
+                  <CommandIcon height={8} width={8} className="h-8 w-8" />
+                  <span>K</span>
+                </Button>
               </Button>
             </div>
 
@@ -112,6 +118,46 @@ export default function AppLayout() {
           <main className="h-full w-full flex-1 overflow-auto">
             <Outlet />
           </main>
+          {/* Bottom details / status bar */}
+          <footer className="flex h-9 shrink-0 items-center justify-between border-t bg-background px-3 text-xs text-muted-foreground">
+            {/* Left: important workspace details */}
+            <div className="flex min-w-0 items-center gap-4">
+              <button className="flex items-center gap-1.5 transition-colors hover:text-foreground">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                <span>Connected</span>
+              </button>
+
+              <div className="hidden h-4 w-px bg-border sm:block" />
+
+              <span className="hidden sm:inline">
+                Workspace: <span className="text-foreground">Acme Inc</span>
+              </span>
+
+              <div className="hidden h-4 w-px bg-border md:block" />
+
+              <span className="hidden md:inline">
+                Model: <span className="text-foreground">GPT-4.1</span>
+              </span>
+            </div>
+
+            {/* Right: useful quick details */}
+            <div className="flex shrink-0 items-center gap-3">
+              <button className="transition-colors hover:text-foreground">
+                Notifications
+              </button>
+
+              <div className="h-4 w-px bg-border" />
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex items-center gap-0.5 transition-colors hover:text-foreground"
+              >
+                <CommandIcon height={8} width={8} className="h-8 w-8" />
+                <span>K</span>
+              </Button>
+            </div>
+          </footer>
         </div>
 
         {/* Right panel — in-flow, animated width, no portal/overlay */}

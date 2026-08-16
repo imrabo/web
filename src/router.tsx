@@ -26,6 +26,8 @@ import { useAuth } from "./features/auth/hooks/useAuth"
 import PricingPage from "./features/payments/pages/PricingPage"
 import ProfilePage from "./features/users/pages/ProfilePage"
 import ChatPage from "./features/messages/pages/ChatPage"
+import SettingsPage from "./features/users/pages/SettingsPage"
+import { WorkSpaceSettingsPage } from "./features/organizations/pages/WorkSpaceSettingsPage"
 
 // =====================================================
 // ROOT PAGE
@@ -204,6 +206,10 @@ export const router = createBrowserRouter([
             index: true,
             element: <ChatPage />,
           },
+          {
+            path: "settings",
+            element: <WorkSpaceSettingsPage />,
+          },
           // -------------------------------------------
           // /dashboard
           // -------------------------------------------
@@ -211,6 +217,10 @@ export const router = createBrowserRouter([
           {
             path: ":username",
             element: <ProfilePage />,
+          },
+          {
+            path: ":username/settings",
+            element: <SettingsPage />,
           },
 
           // -------------------------------------------

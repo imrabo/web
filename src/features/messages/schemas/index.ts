@@ -3,11 +3,11 @@ import * as zod from 'zod';
 import { MessageRole, MessageStatus } from '@/features/messages/types';
 
 export const createMessageSchema = zod.object({
-  conversationId: zod.coerce.number().int().positive(
+  conversation_id: zod.coerce.number().int().positive(
     'Conversation ID is required'
   ),
 
-  workspaceId: zod.coerce.number().int().positive(
+  workspace_id: zod.coerce.number().int().positive(
     'Workspace ID is required'
   ),
 

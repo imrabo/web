@@ -42,7 +42,7 @@ export function NavMain({
   }[]
 }) {
   return (
-    <SidebarGroup>
+    <SidebarGroup className="w-full">
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
 
       <SidebarMenu>
@@ -55,7 +55,10 @@ export function NavMain({
                   tooltip={item.title}
                   isActive={item.isActive}
                 >
-                  <Link to={item.url} className="flex items-center space-x-2">
+                  <Link
+                    to={item.url}
+                    className="justify flex items-center space-x-2"
+                  >
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
                   </Link>
@@ -72,11 +75,16 @@ export function NavMain({
               className="group/collapsible"
             >
               <SidebarMenuItem>
-                <CollapsibleTrigger>
-                  <SidebarMenuButton tooltip={item.title}>
-                    {item.icon && <item.icon />}
+                <CollapsibleTrigger className="w-full">
+                  <SidebarMenuButton
+                    tooltip={item.title}
+                    className="flex w-full items-center justify-between gap-1.5"
+                  >
+                    <div className="flex gap-1.5">
+                      {item.icon && <item.icon />}
 
-                    <span>{item.title}</span>
+                      <span>{item.title}</span>
+                    </div>
 
                     <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
