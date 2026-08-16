@@ -1,13 +1,21 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import usersService from '../services/usersService';
-
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import type { CreateUserFormValues, EditUserFormValues } from '../schemas';
-import type { UserType } from '../types';
+
 import { COLLECTIONS } from '@/lib/constants/COLLECTIONS';
 
+import type {
+  CreateUserFormValues,
+  EditUserFormValues,
+} from '../schemas';
+import type { UserType } from '../types';
+import usersService from '../services/usersService';
+import { data } from 'react-router-dom';
+
+/**
+ * Get all users.
+ */
 export const useUsersQuery = () => {
   return useQuery({
     queryKey: [COLLECTIONS.USERS],
@@ -15,42 +23,56 @@ export const useUsersQuery = () => {
   });
 };
 
-export const useUserQuery = (id: string) => {
-  const queryClient = useQueryClient();
+/**
+ * Get a user by username.
+ */
 
+export const useUserQuery = (username: string) => {
   return useQuery({
-    queryKey: [COLLECTIONS.USERS, id],
-    queryFn: () => usersService.fetchUserById(id),
+    queryKey: [COLLECTIONS.USERS, username],
 
-    initialData: () => {
-      const users = queryClient.getQueryData<UserType[]>([
-        COLLECTIONS.USERS,
-      ]);
-
-      return users?.find((user) => user.id === id);
+    queryFn: async () => {
+      const data = await usersService.fetchUserByUserName(username);
+      return data?.data;
     },
+
+    enabled: Boolean(username),
   });
 };
 
+/**
+ * Create a new user.
+ */
 export const useCreateUserMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreateUserFormValues) => usersService.createUser(data),
+    mutationFn: (data: CreateUserFormValues) =>
+      usersService.createUser(data),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [COLLECTIONS.USERS] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard', 'stats'] });
+      queryClient.invalidateQueries({
+        queryKey: [COLLECTIONS.USERS],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ['dashboard', 'stats'],
+      });
 
       toast.success('User account created successfully');
     },
 
-    onError: (err: any) => {
-      toast.error(err.message || 'Failed to create user account');
+    onError: (err: Error) => {
+      toast.error(
+        err.message || 'Failed to create user account',
+      );
     },
   });
 };
 
+/**
+ * Update an existing user.
+ */
 export const useUpdateUserMutation = () => {
   const queryClient = useQueryClient();
 
@@ -59,70 +81,77 @@ export const useUpdateUserMutation = () => {
       id,
       data,
     }: {
-      id: string;
-      data: EditUserFormValues;
+      id: number;
+      data: Partial<EditUserFormValues>;
     }) => usersService.updateUser(id, data),
 
-    onSuccess: (updated) => {
-      // Update detail cache
-      queryClient.setQueryData(
-        [COLLECTIONS.USERS, updated.id],
-        updated
+    onSuccess: (updatedUser) => {
+      // Update detail cache.
+      queryClient.setQueryData<UserType>(
+        [COLLECTIONS.USERS, updatedUser.data?.id],
+        updatedUser.data!,
       );
 
-      // Update list cache
+      // Update list cache.
       queryClient.setQueryData<UserType[]>(
         [COLLECTIONS.USERS],
-        (old) =>
-          old?.map((user) =>
-            user.id === updated.id ? updated : user
-          ) ?? []
+        (oldUsers) =>
+          oldUsers?.map((user) =>
+            user.id === updatedUser.data?.id
+              ? updatedUser.data!
+              : user,
+          ) ?? [],
       );
 
-      toast.success(`Updated details for ${updated.fullName}`);
+      toast.success(
+        `Updated details for ${updatedUser.data?.first_name} ${updatedUser.data?.last_name}`,
+      );
     },
 
-    onError: (err: any) => {
-      toast.error(err.message || 'Failed to update user details');
+    onError: (err: Error) => {
+      toast.error(
+        err.message || 'Failed to update user details',
+      );
     },
   });
 };
 
-export const useUpdateUserStatusMutation = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      id,
-      status,
-      adminDetails,
-    }: {
-      id: string;
-      status: UserType['status'];
-      adminDetails: { adminId: string; adminName: string; reason?: string };
-    }) => usersService.updateUserStatus(id, status, adminDetails),
-    onSuccess: (updated) => {
-      queryClient.invalidateQueries({ queryKey: [COLLECTIONS.USERS] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard', 'stats'] });
-      queryClient.invalidateQueries({ queryKey: ['auditLogs'] });
-      toast.success(`User status updated to: ${updated.status}`);
-    },
-    onError: (err: any) => {
-      toast.error(err.message || 'Failed to update user status');
-    },
-  });
-};
-
+/**
+ * Delete a user.
+ */
 export const useDeleteUserMutation = () => {
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: (id: string) => usersService.deleteUser(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [COLLECTIONS.USERS] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard', 'stats'] });
-      toast.success('User account deleted permanently');
+    mutationFn: (id: number) =>
+      usersService.deleteUser(id),
+
+    onSuccess: (_, deletedUserId) => {
+      // Remove the deleted user's detail cache.
+      queryClient.removeQueries({
+        queryKey: [COLLECTIONS.USERS, deletedUserId],
+      });
+
+      // Remove the deleted user from the list cache.
+      queryClient.setQueryData<UserType[]>(
+        [COLLECTIONS.USERS],
+        (oldUsers) =>
+          oldUsers?.filter(
+            (user) => user.id !== deletedUserId,
+          ) ?? [],
+      );
+
+      queryClient.invalidateQueries({
+        queryKey: ['dashboard', 'stats'],
+      });
+
+      toast.success('User account deleted successfully');
     },
-    onError: (err: any) => {
-      toast.error(err.message || 'Failed to delete user account');
+
+    onError: (err: Error) => {
+      toast.error(
+        err.message || 'Failed to delete user account',
+      );
     },
   });
 };

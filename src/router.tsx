@@ -1,8 +1,7 @@
-import { createBrowserRouter, Navigate } from "react-router-dom"
+import { createBrowserRouter, Navigate, Outlet } from "react-router-dom"
 
 import AppLayout from "./components/layouts/app-layout"
 
-import ChatPage from "./features/chat/pages/ChatPage"
 import GraphPage from "./features/graph/pages/GraphPage"
 
 import DocsPage from "./pages/DocsPage"
@@ -17,26 +16,44 @@ import PrivacyPage from "./pages/PrivacyPage"
 import RefundPolicyPage from "./pages/RefundPolicyPage"
 
 import { ConnectorsPage } from "./features/connectors"
+
 import HttpPage from "./pages/docs/HttpPage"
 import WebHookPage from "./pages/docs/WebHookPage"
 import McpPage from "./pages/docs/McpPage"
 
 import { useAuth } from "./features/auth/hooks/useAuth"
+
 import PricingPage from "./features/payments/pages/PricingPage"
+import ProfilePage from "./features/users/pages/ProfilePage"
+import ChatPage from "./features/messages/pages/ChatPage"
 
 // =====================================================
 // ROOT PAGE
 // =====================================================
 
 function RootPage() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
 
-  // User is logged in
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />
+  // ---------------------------------------------------
+  // Wait for authentication initialization
+  // ---------------------------------------------------
+
+  if (isLoading) {
+    return null
   }
 
-  // User is not logged in
+  // ---------------------------------------------------
+  // Authenticated user
+  // ---------------------------------------------------
+
+  if (isAuthenticated) {
+    return <Navigate to="/chat" replace />
+  }
+
+  // ---------------------------------------------------
+  // Public user
+  // ---------------------------------------------------
+
   return <HomePage />
 }
 
@@ -45,14 +62,36 @@ function RootPage() {
 // =====================================================
 
 function ProtectedRoute() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
 
-  // Not logged in
+  // ---------------------------------------------------
+  // Authentication is still being initialized
+  // ---------------------------------------------------
+
+  if (isLoading) {
+    return null
+  }
+
+  // ---------------------------------------------------
+  // User is not authenticated
+  // ---------------------------------------------------
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
 
-  // Logged in
+  // ---------------------------------------------------
+  // User is authenticated
+  // ---------------------------------------------------
+
+  return <Outlet />
+}
+
+// =====================================================
+// AUTHENTICATED LAYOUT
+// =====================================================
+
+function DashboardLayout() {
   return <AppLayout />
 }
 
@@ -138,25 +177,61 @@ export const router = createBrowserRouter([
   },
 
   // ===================================================
-  // PROTECTED DASHBOARD
+  // PRICING
+  // ===================================================
+
+  {
+    path: "/pricing",
+    element: <PricingPage />,
+  },
+
+  // ===================================================
+  // PROTECTED APPLICATION
   // ===================================================
 
   {
     element: <ProtectedRoute />,
     children: [
       {
-        path: "/dashboard",
-        element: <ChatPage />,
-      },
+        path: "/",
+        element: <DashboardLayout />,
+        children: [
+          // -------------------------------------------
+          // /
+          // -------------------------------------------
 
-      {
-        path: "/graph",
-        element: <GraphPage />,
+          {
+            index: true,
+            element: <ChatPage />,
+          },
+          // -------------------------------------------
+          // /dashboard
+          // -------------------------------------------
+
+          {
+            path: ":username",
+            element: <ProfilePage />,
+          },
+
+          // -------------------------------------------
+          // /graph
+          // -------------------------------------------
+
+          {
+            path: "graph",
+            element: <GraphPage />,
+          },
+
+          // -------------------------------------------
+          // /connectors
+          // -------------------------------------------
+
+          {
+            path: "connectors",
+            element: <ConnectorsPage />,
+          },
+        ],
       },
     ],
-  },
-  {
-    path: "/pricing",
-    element: <PricingPage />,
   },
 ])

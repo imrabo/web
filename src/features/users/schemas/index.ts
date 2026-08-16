@@ -1,79 +1,84 @@
 import * as z from 'zod';
 
-import {
-  MembershipType,
-  UserStatus,
-  Gender,
-  ThemeMode,
-} from '../types/users.enums';
+import { Gender } from '../types';
 
-export const childSchema = z.object({
-  name: z.string().min(1, 'Child name is required'),
-  dob: z.date(),
-  gender: z.nativeEnum(Gender),
-});
-
-export const userPreferencesSchema = z.object({
-  themeMode: z.nativeEnum(ThemeMode),
-
-  languageCode: z.string().default('en'),
-
-  notificationsEnabled: z.boolean(),
-
-  emailNotificationsEnabled: z.boolean(),
-
-  smsNotificationsEnabled: z.boolean(),
-
-  biometricEnabled: z.boolean(),
-});
-
+/**
+ * Common user fields.
+ */
 export const userFormSchema = z.object({
-
-
-
-  fullName: z
+  first_name: z
     .string()
-    .min(2, 'Full name must be at least 2 characters'),
+    .trim()
+    .min(3, 'First name must be at least 3 characters')
+    .max(100, 'First name must be at most 100 characters'),
 
-  email: z.string().email('Please enter a valid email'),
-
-  mobileNo: z
+  last_name: z
     .string()
-    .min(10, 'Please enter a valid mobile number'),
-
-  membershipType: z.nativeEnum(MembershipType),
-
-
-
-  status: z.nativeEnum(UserStatus),
-
-  isActive: z.boolean().default(true).optional(),
-
-  isExpert: z.boolean().default(false).optional(),
-
-  // dateOfBirth: z.date().optional(),
+    .trim()
+    .min(3, 'Last name must be at least 3 characters')
+    .max(100, 'Last name must be at most 100 characters'),
 
   gender: z.nativeEnum(Gender),
 
-  // children: z.array(childSchema).default([]).optional(),
+  username: z
+    .string()
+    .trim()
+    .min(3, 'Username must be at least 3 characters')
+    .max(100, 'Username must be at most 100 characters')
+    .regex(
+      /^[a-zA-Z0-9_.-]+$/,
+      'Username can only contain letters, numbers, underscores, dots, and hyphens',
+    ),
+
+  email: z
+    .string()
+    .trim()
+    .email('Please enter a valid email'),
+
+  phone_number: z
+    .string()
+    .trim()
+    .min(10, 'Please enter a valid phone number')
+    .max(15, 'Phone number must be at most 15 characters')
+    .nullable()
+    .optional(),
 });
 
+/**
+ * Create user validation.
+ *
+ * Matches the backend CreateUser schema:
+ * - first_name: required, 3-100 characters
+ * - last_name: required, 3-100 characters
+ * - username: required, 3-100 characters
+ * - email: required, valid email
+ * - phone_number: optional/null, max 15 characters
+ * - password: optional/null, 8-128 characters
+ */
 export const createUserSchema = userFormSchema.extend({
-  membershipType: z
-    .nativeEnum(MembershipType)
-    .default(MembershipType.FREE),
-
-  status: z
-    .nativeEnum(UserStatus)
-    .default(UserStatus.ACTIVE),
-
-  isActive: z.boolean().default(true).optional(),
-
-  isExpert: z.boolean().default(false).optional(),
-
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(128, 'Password must be at most 128 characters')
+    .optional()
+    .nullable(),
 });
 
-export const editUserSchema = userFormSchema.partial();
+/**
+ * Edit user validation.
+ *
+ * All user fields are optional for PATCH requests.
+ */
+export const editUserSchema = userFormSchema
+  .extend({
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .max(128, 'Password must be at most 128 characters')
+      .optional()
+      .nullable(),
+  })
+  .partial();
 
 export type UserFormValues = z.infer<typeof userFormSchema>;
 

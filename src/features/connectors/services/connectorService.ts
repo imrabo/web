@@ -4,7 +4,7 @@ import type { ConnectorFile, StoreProduct } from '../types';
 import type { Connector, ConnectorStats, CreateConnectorInput, UpdateConnectorInput } from '../types/connector.types';
 
 
-export const resourcesService = {
+export const connectorService = {
   /**
    * Fetch all connectors
    */
@@ -163,4 +163,4 @@ export const resourcesService = {
   },
 };
 
-export default resourcesService;
+export default connectorService;

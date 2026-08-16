@@ -1,243 +1,692 @@
 /**
  * HTTP Client & Response Utilities
- * Standardized API communication patterns
+ *
+ * Standardized Axios API communication.
+ *
+ * Authentication:
+ * - Access token is kept in memory.
+ * - Refresh token is stored by the backend as an HttpOnly cookie.
+ * - Axios sends cookies with `withCredentials: true`.
+ * - Access token is attached as `Authorization: Bearer <token>`.
  */
 
+import type { ApiResponse } from '@/types/api-response.types';
+import axios, {
+  AxiosError,
+  type AxiosInstance,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from 'axios';
+
+
+// ============================================================
+// API TYPES
+// ============================================================
 
 /**
- * Standard API Response Format
+ * Standard API error details.
  */
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: {
-    code: string;
-    message: string;
-    details?: Record<string, any>;
-  };
-  meta?: {
-    timestamp: string;
-    version: string;
-    pagination?: {
-      total: number;
-      page: number;
-      pageSize: number;
-      totalPages: number;
-    };
-  };
+export interface ApiErrorDetails {
+  [key: string]: unknown;
 }
 
-/**
- * HTTP Client for API calls
- */
-export class ApiClient {
-  private baseUrl: string;
-  private timeout: number = 30000;
 
-  constructor(baseUrl: string = import.meta.env.VITE_PUBLIC_API_URL) {
-    this.baseUrl = baseUrl;
+
+/**
+ * Standard API pagination.
+ */
+export interface Pagination {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+
+// ============================================================
+// API ERROR
+// ============================================================
+
+export class ApiError extends Error {
+  public readonly statusCode: number;
+  public readonly code: string;
+  public readonly details?: ApiErrorDetails;
+
+  constructor(
+    message: string,
+    statusCode: number = 500,
+    code: string = 'API_ERROR',
+    details?: ApiErrorDetails,
+  ) {
+    super(message);
+
+    this.name = 'ApiError';
+    this.statusCode = statusCode;
+    this.code = code;
+    this.details = details;
+
+    Object.setPrototypeOf(
+      this,
+      ApiError.prototype,
+    );
   }
+}
+
+
+// ============================================================
+// ACCESS TOKEN MANAGEMENT
+// ============================================================
+
+/**
+ * Access token is intentionally kept in memory.
+ *
+ * Do NOT store it in localStorage/sessionStorage if your
+ * authentication architecture requires memory-only JWT storage.
+ */
+
+let accessToken: string | null = null;
+
+
+/**
+ * Set access token.
+ */
+export const setAccessToken = (
+  token: string | null,
+): void => {
+  accessToken = token;
+};
+
+
+/**
+ * Get access token.
+ */
+export const getAccessToken = (): string | null => {
+  return accessToken;
+};
+
+
+/**
+ * Clear access token.
+ */
+export const clearAccessToken = (): void => {
+  accessToken = null;
+};
+
+
+// ============================================================
+// AXIOS CONFIGURATION
+// ============================================================
+
+const API_BASE_URL =
+  import.meta.env.VITE_PUBLIC_API_URL;
+
+
+/**
+ * Axios instance.
+ */
+const axiosClient: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+
+  timeout: 30_000,
 
   /**
-  * Make HTTP request with error handling
-  */
-  private async request<T>(
-    endpoint: string,
-    method: 'GET' | 'POST' | 'PATCH' | 'DELETE' = 'GET',
-    data?: unknown
-  ): Promise<T> {
-    try {
-      const url = `${this.baseUrl}${endpoint}`;
+   * Required for HttpOnly refresh-token cookies.
+   */
+  withCredentials: true,
 
-      const options: RequestInit = {
-        method,
-        credentials: 'include', // Send HttpOnly session cookie
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        signal: AbortSignal.timeout(this.timeout),
-      };
+  headers: {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  },
+});
 
-      if (data !== undefined && method !== 'GET') {
-        options.body = JSON.stringify(data);
+
+// ============================================================
+// REQUEST INTERCEPTOR
+// ============================================================
+
+axiosClient.interceptors.request.use(
+  (
+    config: InternalAxiosRequestConfig,
+  ) => {
+
+    const token = getAccessToken();
+
+    /**
+     * Add access JWT to protected requests.
+     */
+    if (token) {
+      config.headers.Authorization =
+        `Bearer ${token}`;
+    }
+
+    return config;
+  },
+
+  (error) => {
+    return Promise.reject(error);
+  },
+);
+
+
+// ============================================================
+// REFRESH STATE
+// ============================================================
+
+let isRefreshing = false;
+
+let refreshPromise: Promise<string | null> | null = null;
+
+
+// ============================================================
+// REFRESH ACCESS TOKEN
+// ============================================================
+
+const refreshAccessToken =
+  async (): Promise<string | null> => {
+
+    /**
+     * Prevent multiple simultaneous refresh calls.
+     *
+     * If five API requests receive 401 at the same time,
+     * only one /refresh request is sent.
+     */
+
+    if (isRefreshing && refreshPromise) {
+      return refreshPromise;
+    }
+
+    isRefreshing = true;
+
+    refreshPromise = (async () => {
+      try {
+        const response =
+          await axiosClient.post<
+            ApiResponse<{
+              access_token: string;
+              token_type: string;
+            }>
+          >(
+            '/auth-user/refresh',
+            {},
+          );
+
+        const token =
+          response.data?.data?.access_token;
+
+        if (!token) {
+          clearAccessToken();
+
+          return null;
+        }
+
+        setAccessToken(token);
+
+        return token;
+
+      } catch {
+        clearAccessToken();
+
+        return null;
+
+      } finally {
+        isRefreshing = false;
+        refreshPromise = null;
       }
+    })();
 
-      const response = await fetch(url, options);
+    return refreshPromise;
+  };
 
-      // Handle empty responses (204 No Content)
-      if (response.status === 204) {
-        return undefined as T;
-      }
 
-      const contentType = response.headers.get('content-type');
+// ============================================================
+// RESPONSE INTERCEPTOR
+// ============================================================
 
-      const body =
-        contentType?.includes('application/json')
-          ? ((await response.json()) as ApiResponse<T> | T)
-          : undefined;
+axiosClient.interceptors.response.use(
 
-      const isEnvelope =
-        typeof body === 'object' &&
-        body !== null &&
-        'success' in body;
+  /**
+   * Successful response.
+   */
+  (
+    response: AxiosResponse,
+  ) => {
 
-      if (!response.ok) {
-        const errorBody = isEnvelope
-          ? (body as ApiResponse<T>)
-          : undefined;
+    const body =
+      response.data as
+      | ApiResponse
+      | unknown;
 
+    /**
+     * If backend returned our standard envelope,
+     * validate the `success` field.
+     */
+    if (
+      body &&
+      typeof body === 'object' &&
+      'success' in body
+    ) {
+
+      const apiResponse =
+        body as ApiResponse;
+
+      if (!apiResponse.success) {
         throw new ApiError(
-          errorBody?.error?.message || response.statusText || `HTTP ${response.status}`,
-          response.status,
-          errorBody?.error?.code || 'HTTP_ERROR',
-          errorBody?.error?.details
+          apiResponse.message
+        );
+      }
+    }
+
+    return response;
+  },
+
+
+  /**
+   * Failed response.
+   */
+  async (
+    error: AxiosError,
+  ) => {
+
+    const originalRequest =
+      error.config as
+      | (InternalAxiosRequestConfig & {
+        _retry?: boolean;
+      })
+      | undefined;
+
+
+    // ----------------------------------------------------
+    // No response from server
+    // ----------------------------------------------------
+
+    if (!error.response) {
+      return Promise.reject(
+        new ApiError(
+          error.message ||
+          'Unable to connect to the server.',
+          0,
+          'NETWORK_ERROR',
+        ),
+      );
+    }
+
+
+    const status =
+      error.response.status;
+
+
+    const responseData =
+      error.response.data as
+      | ApiResponse
+      | undefined;
+
+
+    // ----------------------------------------------------
+    // 401 Unauthorized
+    // ----------------------------------------------------
+
+    if (
+      status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes(
+        '/auth-user/refresh',
+      ) &&
+      !originalRequest.url?.includes(
+        '/auth-user/login',
+      )
+    ) {
+
+      originalRequest._retry = true;
+
+
+      const newToken =
+        await refreshAccessToken();
+
+
+      if (newToken) {
+
+        originalRequest.headers =
+          originalRequest.headers || {};
+
+        originalRequest.headers.Authorization =
+          `Bearer ${newToken}`;
+
+        return axiosClient(
+          originalRequest,
         );
       }
 
-      if (isEnvelope) {
-        const apiResponse = body as ApiResponse<T>;
 
-        if (!apiResponse.success) {
-          throw new ApiError(
-            apiResponse.error?.message || 'Request failed',
-            response.status,
-            apiResponse.error?.code || 'API_ERROR',
-            apiResponse.error?.details
-          );
-        }
+      /**
+       * Refresh failed.
+       *
+       * Clear in-memory token.
+       *
+       * Do not redirect here because the API client
+       * should not own application routing.
+       */
 
-        return apiResponse.data as T;
-      }
+      clearAccessToken();
 
-      return body as T;
-    } catch (error) {
-      if (error instanceof ApiError) {
-        throw error;
-      }
-
-      throw new ApiError(
-        error instanceof Error ? error.message : 'Unknown error',
-        500,
-        'UNKNOWN_ERROR'
+      return Promise.reject(
+        new ApiError(
+          responseData?.message ||
+          'Authentication required.',
+          401,
+          responseData?.code ||
+          'UNAUTHORIZED',
+          responseData?.meta || {},
+        ),
       );
     }
+
+
+    // ----------------------------------------------------
+    // API error response
+    // ----------------------------------------------------
+
+    const message =
+      responseData?.message ||
+      `HTTP ${status}`;
+
+
+    const code =
+      responseData?.code ||
+      'HTTP_ERROR';
+
+
+    const details =
+      responseData?.meta || {};
+
+
+    return Promise.reject(
+      new ApiError(
+        message,
+        status,
+        code,
+        details,
+      ),
+    );
+  },
+);
+
+
+// ============================================================
+// API CLIENT
+// ============================================================
+
+export class ApiClient {
+
+  private readonly client: AxiosInstance;
+
+
+  constructor(
+    client: AxiosInstance = axiosClient,
+  ) {
+    this.client = client;
   }
 
-  /**
-   * GET request
-   */
-  async get<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, 'GET');
+
+  // ========================================================
+  // GET
+  // ========================================================
+
+  async get<T>(
+    endpoint: string,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> {
+
+    const response =
+      await this.client.get<
+        ApiResponse<T>
+      >(
+        endpoint,
+        config,
+      );
+
+    return response.data;
   }
 
-  /**
-   * POST request
-   */
-  async post<T>(endpoint: string, data: any): Promise<T> {
-    return this.request<T>(endpoint, 'POST', data);
+
+  // ========================================================
+  // POST
+  // ========================================================
+
+  async post<T>(
+    endpoint: string,
+    data?: unknown,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> {
+
+    const response =
+      await this.client.post<
+        ApiResponse<T>
+      >(
+        endpoint,
+        data,
+        config,
+      );
+
+    return response.data;
   }
 
-  /**
-   * PATCH request
-   */
-  async patch<T>(endpoint: string, data: any): Promise<T> {
-    return this.request<T>(endpoint, 'PATCH', data);
+
+  // ========================================================
+  // PATCH
+  // ========================================================
+
+  async patch<T>(
+    endpoint: string,
+    data?: unknown,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> {
+
+    const response =
+      await this.client.patch<
+        ApiResponse<T>
+      >(
+        endpoint,
+        data,
+        config,
+      );
+
+    return response.data;
   }
 
-  /**
-   * DELETE request
-   */
-  async delete<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, 'DELETE');
+
+  // ========================================================
+  // PUT
+  // ========================================================
+
+  async put<T>(
+    endpoint: string,
+    data?: unknown,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> {
+
+    const response =
+      await this.client.put<
+        ApiResponse<T>
+      >(
+        endpoint,
+        data,
+        config,
+      );
+
+    return response.data;
   }
 
-  /**
-   * Get with query parameters
-   */
+
+  // ========================================================
+  // DELETE
+  // ========================================================
+
+  async delete<T>(
+    endpoint: string,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> {
+
+    const response =
+      await this.client.delete<
+        ApiResponse<T>
+      >(
+        endpoint,
+        config,
+      );
+
+    return response.data;
+  }
+
+
+  // ========================================================
+  // GET WITH QUERY
+  // ========================================================
+
   async getWithQuery<T>(
     endpoint: string,
-    params?: Record<string, string | number | boolean | Date>
-  ): Promise<T> {
-    const queryString = params
-      ? `?${new URLSearchParams(
-        Object.entries(params).map(([key, value]) => [key, String(value)])
-      ).toString()}`
-      : '';
-    return this.get<T>(`${endpoint}${queryString}`);
+    params?: Record<
+      string,
+      string | number | boolean | Date | null | undefined
+    >,
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<T>> {
+
+    const searchParams =
+      new URLSearchParams();
+
+
+    if (params) {
+
+      Object.entries(params).forEach(
+        ([key, value]) => {
+
+          if (
+            value !== null &&
+            value !== undefined
+          ) {
+            searchParams.set(
+              key,
+              String(value),
+            );
+          }
+        },
+      );
+    }
+
+
+    const queryString =
+      searchParams.toString();
+
+
+    const url =
+      queryString
+        ? `${endpoint}?${queryString}`
+        : endpoint;
+
+
+    return this.get<T>(
+      url,
+      config,
+    );
   }
 }
 
-/**
- * Custom API Error class
- */
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    public statusCode: number = 500,
-    public code: string = 'API_ERROR',
-    public details?: Record<string, any>
-  ) {
-    super(message);
-    this.name = 'ApiError';
-  }
-}
 
-/**
- * Response builder for consistent API responses
- */
+// ============================================================
+// RESPONSE BUILDER
+// ============================================================
+
 export class ResponseBuilder {
+
   /**
-   * Build success response
+   * Build successful API response.
    */
-  static success<T>(data: T, meta?: any): ApiResponse<T> {
+  static success<T>(
+    data: T,
+    meta?: ApiResponse<T>['meta'],
+  ): ApiResponse<T> {
+
     return {
       success: true,
       data,
       meta: {
         timestamp: new Date().toISOString(),
+
         version: 'v1',
+
         ...meta,
       },
+
+      code: '',
+      message: '',
+
     };
   }
 
+
   /**
-   * Build error response
+   * Build error API response.
    */
   static error(
     message: string,
     code: string = 'ERROR',
-    statusCode: number = 400,
-    details?: Record<string, any>
-  ): [ApiResponse, number] {
-    return [
-      {
-        success: false,
-        error: {
+    details?: ApiErrorDetails,
+  ): ApiResponse<null> {
+
+    return {
+      success: false,
+
+      data: null,
+
+      errors: [
+        {
           code,
           message,
-          details,
-        },
-        meta: {
-          timestamp: new Date().toISOString(),
-          version: 'v1',
-        },
-      },
-      statusCode,
-    ];
-  }
+          ...details,
+        }
+      ],
 
-  /**
-   * Build paginated response
-   */
-  static paginated<T>(items: T[], total: number, page: number, pageSize: number): ApiResponse<T[]> {
-    const totalPages = Math.ceil(total / pageSize);
-    return {
-      success: true,
-      data: items,
       meta: {
         timestamp: new Date().toISOString(),
+
         version: 'v1',
+      },
+
+      code: '',
+      message: '',
+
+    };
+  }
+
+
+  /**
+   * Build paginated API response.
+   */
+  static paginated<T>(
+    items: T[],
+    total: number,
+    page: number,
+    pageSize: number,
+  ): ApiResponse<T[]> {
+
+    const totalPages =
+      Math.ceil(
+        total / pageSize,
+      );
+
+    return {
+      success: true,
+
+      data: items,
+
+      meta: {
+        timestamp: new Date().toISOString(),
+
+        version: 'v1',
+
         pagination: {
           total,
           page,
@@ -245,77 +694,77 @@ export class ResponseBuilder {
           totalPages,
         },
       },
+
+      code: '',
+      message: '',
+
     };
   }
 }
 
-/**
- * Validation error response builder
- */
-export class ValidationErrorBuilder {
-  private errors: Record<string, string[]> = {};
 
-  addError(field: string, message: string): this {
+// ============================================================
+// VALIDATION ERROR BUILDER
+// ============================================================
+
+export class ValidationErrorBuilder {
+
+  private errors: Record<
+    string,
+    string[]
+  > = {};
+
+
+  addError(
+    field: string,
+    message: string,
+  ): this {
+
     if (!this.errors[field]) {
       this.errors[field] = [];
     }
-    this.errors[field].push(message);
+
+    this.errors[field].push(
+      message,
+    );
+
     return this;
   }
 
+
   hasErrors(): boolean {
-    return Object.keys(this.errors).length > 0;
+    return (
+      Object.keys(
+        this.errors,
+      ).length > 0
+    );
   }
 
-  build(): [ApiResponse, number] {
-    return ResponseBuilder.error('Validation failed', 'VALIDATION_ERROR', 422, this.errors);
+
+  build(): ApiResponse<null> {
+
+    return ResponseBuilder.error(
+      'Validation failed',
+      'VALIDATION_ERROR',
+      this.errors,
+    );
   }
 }
 
-/**
- * Instance
- */
-export const apiClient = new ApiClient();
 
-/**
- * Usage Examples:
- *
- * // GET request
- * const response = await apiClient.get<User>('/users/123');
- * if (response.success) {
- *   console.log(response.data);
- * }
- *
- * // POST request
- * const createResponse = await apiClient.post<User>('/users', {
- *   firstName: 'John',
- *   email: 'john@example.com'
- * });
- *
- * // In API route
- * export async function POST(req: NextRequest) {
- *   try {
- *     const body = await req.json();
- *     const result = await someService.create(body);
- *     return NextResponse.json(ResponseBuilder.success(result));
- *   } catch (error) {
- *     const [response, status] = ResponseBuilder.error(
- *       error.message,
- *       'CREATE_ERROR'
- *     );
- *     return NextResponse.json(response, { status });
- *   }
- * }
- *
- * // In component with error handling
- * try {
- *   const response = await apiClient.post('/users', userData);
- *   if (response.success) {
- *     console.log('User created:', response.data);
- *   }
- * } catch (error) {
- *   if (error instanceof ApiError) {
- *     console.error(`Error ${error.statusCode}:`, error.message);
- *   }
- * }
- */
+// ============================================================
+// SINGLE API CLIENT INSTANCE
+// ============================================================
+
+export const apiClient =
+  new ApiClient();
+
+
+// ============================================================
+// EXPORT AXIOS INSTANCE
+// ============================================================
+
+export {
+  axiosClient,
+};
+

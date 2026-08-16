@@ -1,88 +1,54 @@
-import { Gender, MembershipType, ThemeMode, UserStatus } from "./users.enums";
-
 export interface UserType {
-  id: string;
-  firebaseUid?: string;
-  mobileNo: string;
-  fullName: string;
+  id: number;
+
+  first_name: string;
+  last_name: string;
+
+  username: string;
   email: string;
-  fcmToken?: string;
 
-  children?: UserChild[];
+  phone_number?: string | null;
 
-  preferences?: UserPreferences;
+  /**
+   * Password hash should generally NOT be returned by the API.
+   * It exists in the database model but should be excluded
+   * from the API response.
+   */
+  password_hash?: string;
 
-  membershipType: MembershipType;
+  created_by?: string | null;
+  updated_by?: string | null;
 
-  isActive: boolean;
-  isExpert: boolean;
-
-  status: UserStatus;
-
-  dateOfBirth: Date; // ISO Timestamp
-  gender: Gender;
-
-  lastLoginAt?: string; // ISO Timestamp
-  lastActiveAt?: string; // ISO Timestamp
-
-  createdAt: Date; // ISO Timestamp
-      updatedAt?: Date; // ISO Timestamp
+  created_at: string;
+  updated_at: string;
 }
 
-export interface UserChild {
-  name: string;
-  dob: Date; // ISO Timestamp
-  gender: Gender;
+export interface UserCreateData {
+  first_name: string;
+  last_name: string;
+
+  username: string;
+  email: string;
+
+  phone_number?: string | null;
+
+  password: string;
 }
 
-export interface UserPreferences {
-  themeMode: ThemeMode;
-  languageCode: string;
+export interface UserUpdateData {
+  first_name?: string;
+  last_name?: string;
 
-  notificationsEnabled: boolean;
+  username?: string;
+  email?: string;
 
-  emailNotificationsEnabled: boolean;
-  smsNotificationsEnabled: boolean;
+  phone_number?: string | null;
 
-
-  biometricEnabled: boolean;
-
+  password?: string;
 }
 
 export interface UserFilters {
   search?: string;
-  membershipType?: MembershipType;
-  status?: UserStatus;
-  isActive?: boolean;
-  isExpert?: boolean;
-  gender?: Gender;
-}
-
-
-export interface UserCreateData {
-
-  fullName: string;
-  email: string;
-  mobileNo: string;
-  membershipType: MembershipType;
-  // dateOfBirth: Date;
-  gender: Gender;
-  preferences?: UserPreferences;
-  // children?: UserChild[];
-
-}
-
-export interface UserUpdateData {
-  fullName?: string;
+  username?: string;
   email?: string;
-  mobileNo?: string;
-  membershipType?: MembershipType;
-
-  status?: UserStatus;
-  isActive?: boolean;
-  isExpert?: boolean;
-  dateOfBirth?: Date;
-  gender?: Gender;
-  preferences?: Record<string, unknown>;
-  children?: Array<Partial<UserChild>>;
 }

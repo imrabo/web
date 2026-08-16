@@ -7,8 +7,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+
 import {
-  SidebarContent,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
@@ -18,6 +18,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
+import { Link } from "react-router-dom"
 
 export function NavMain({
   items,
@@ -27,6 +28,13 @@ export function NavMain({
     url: string
     icon?: LucideIcon
     isActive?: boolean
+
+    /**
+     * When true, clicking the main item navigates
+     * directly to its URL instead of opening a submenu.
+     */
+    showItems?: boolean
+
     items?: {
       title: string
       url: string
@@ -35,41 +43,62 @@ export function NavMain({
 }) {
   return (
     <SidebarGroup>
-      <SidebarContent>
-        <SidebarGroupLabel>Platform</SidebarGroupLabel>
-      </SidebarContent>
-      <SidebarMenu>
-        {items.map((item) => (
-          <Collapsible
-            key={item.title}
+      <SidebarGroupLabel>Platform</SidebarGroupLabel>
 
-            defaultOpen={item.isActive}
-            className="group/collapsible"
-          >
-            <SidebarMenuItem>
-              <CollapsibleTrigger>
-                <SidebarMenuButton tooltip={item.title}>
-                  {item.icon && <item.icon />}
-                  <span>{item.title}</span>
-                  <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+      <SidebarMenu>
+        {items.map((item) => {
+          // Direct navigation item
+          if (item.showItems === false) {
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  tooltip={item.title}
+                  isActive={item.isActive}
+                >
+                  <Link to={item.url} className="flex items-center space-x-2">
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </Link>
                 </SidebarMenuButton>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarMenuSub>
-                  {item.items?.map((subItem) => (
-                    <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton>
-                        <a href={subItem.url}>
-                          <span>{subItem.title}</span>
-                        </a>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  ))}
-                </SidebarMenuSub>
-              </CollapsibleContent>
-            </SidebarMenuItem>
-          </Collapsible>
-        ))}
+              </SidebarMenuItem>
+            )
+          }
+
+          // Collapsible item
+          return (
+            <Collapsible
+              key={item.title}
+              defaultOpen={item.isActive}
+              className="group/collapsible"
+            >
+              <SidebarMenuItem>
+                <CollapsibleTrigger>
+                  <SidebarMenuButton tooltip={item.title}>
+                    {item.icon && <item.icon />}
+
+                    <span>{item.title}</span>
+
+                    <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {item.items?.map((subItem) => (
+                      <SidebarMenuSubItem key={subItem.title}>
+                        <SidebarMenuSubButton>
+                          <Link to={subItem.url}>
+                            <span>{subItem.title}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
+          )
+        })}
       </SidebarMenu>
     </SidebarGroup>
   )

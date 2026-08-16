@@ -1,6 +1,7 @@
 // collections.ts
 
 export const COLLECTIONS = {
+    AUTH: 'auth',
     USERS: 'users',
 
     ADMIN_USERS: 'admin_users',

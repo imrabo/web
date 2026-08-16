@@ -174,7 +174,7 @@ export const ConnectorsPage: React.FC = () => {
       {/* Main Table Card */}
       <DataTable
         columns={columns}
-        data={connectors}
+        data={[]}
         searchKey="title"
         searchPlaceholder="Search connectors by title..."
         loading={isLoading}

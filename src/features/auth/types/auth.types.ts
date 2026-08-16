@@ -2,20 +2,21 @@
 // AUTH ENUMS
 // ================================
 
+import type { UserType } from "@/features/users";
+
 export enum OtpPurpose {
-    REGISTRATION = "REGISTRATION",
-    LOGIN = "LOGIN",
-    PASSWORD_RESET = "PASSWORD_RESET",
-    MFA = "MFA",
-    PHONE_VERIFICATION = "PHONE_VERIFICATION",
-    EMAIL_VERIFICATION = "EMAIL_VERIFICATION",
+    REGISTRATION = 'REGISTRATION',
+    LOGIN = 'LOGIN',
+    PASSWORD_RESET = 'PASSWORD_RESET',
+    MFA = 'MFA',
+    PHONE_VERIFICATION = 'PHONE_VERIFICATION',
+    EMAIL_VERIFICATION = 'EMAIL_VERIFICATION',
 }
 
-
 export enum MfaMethod {
-    SMS = "SMS",
-    EMAIL = "EMAIL",
-    AUTHENTICATOR_APP = "AUTHENTICATOR_APP",
+    SMS = 'SMS',
+    EMAIL = 'EMAIL',
+    AUTHENTICATOR_APP = 'AUTHENTICATOR_APP',
 }
 
 
@@ -23,38 +24,25 @@ export enum MfaMethod {
 // AUTH REQUEST TYPES
 // ================================
 
-import type { Gender, MembershipType, UserPreferences, UserType } from "@/features/users";
-
 export interface RegistrationRequest {
-<<<<<<< HEAD
-    name: string;
-=======
-    fullName: string;
->>>>>>> d1b3273a40bade3ada722899f90296323b1a3854
+    first_name: string;
+    last_name: string;
+
+    username: string;
     email: string;
-    mobileNo: string;
+
+    phone_number?: string | null;
+
     password: string;
-    confirmPassword: string;
-
-    dateOfBirth?: Date;
-    gender?: Gender;
-
-    membershipType?: MembershipType;
-
-    preferences?: UserPreferences;
 }
-
 
 export interface LoginRequest {
-    email: string;
+    username: string;
     password: string;
-
-    rememberMe?: boolean;
 }
 
-
 export interface OtpVerificationRequest {
-    mobileNo?: string;
+    phone_number?: string;
     email?: string;
 
     otp: string;
@@ -62,19 +50,16 @@ export interface OtpVerificationRequest {
     purpose: OtpPurpose;
 }
 
-
 export interface ResendOtpRequest {
-    mobileNo?: string;
+    phone_number?: string;
     email?: string;
 
     purpose: OtpPurpose;
 }
 
-
 export interface ForgotPasswordRequest {
     email: string;
 }
-
 
 export interface ResetPasswordRequest {
     token?: string;
@@ -85,7 +70,6 @@ export interface ResetPasswordRequest {
     newPassword: string;
     confirmPassword: string;
 }
-
 
 export interface ChangePasswordRequest {
     currentPassword: string;
@@ -103,7 +87,6 @@ export interface EnableMfaRequest {
     method: MfaMethod;
 }
 
-
 export interface VerifyMfaRequest {
     code: string;
 
@@ -112,24 +95,26 @@ export interface VerifyMfaRequest {
     challengeId?: string;
 }
 
-
 export interface DisableMfaRequest {
     password: string;
+
     code?: string;
 }
-
 
 export interface MfaChallengeRequest {
     method: MfaMethod;
 }
 
 
+// ================================
+// AUTH RESPONSES
+// ================================
 
 export interface AuthResponse {
     user: UserType;
 
-    accessToken: string;
-    refreshToken?: string;
+    access_token: string;
+    refresh_token?: string;
 
     expiresIn?: number;
 
@@ -139,28 +124,25 @@ export interface AuthResponse {
     mfaChallengeId?: string;
 }
 
-
 export interface OtpVerificationResponse {
     verified: boolean;
 
     user?: UserType;
 
-    accessToken?: string;
-    refreshToken?: string;
+    access_token?: string;
+    refresh_token?: string;
 
     requiresMfa?: boolean;
 }
 
-
 export interface MfaVerificationResponse {
     verified: boolean;
 
-    accessToken?: string;
-    refreshToken?: string;
+    access_token?: string;
+    refresh_token?: string;
 
     user?: UserType;
 }
-
 
 export interface PasswordResetResponse {
     success: boolean;

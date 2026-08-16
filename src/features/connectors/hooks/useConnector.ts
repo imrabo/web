@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import resourcesService from '../services/connectorService';
+
 import { toast } from 'sonner';
 import type { ConnectorFilters } from '../types/connector.types';
 import type { CreateConnectorFormValues, UpdateConnectorFormValues } from '../schemas';
 import { COLLECTIONS } from '@/lib/constants/COLLECTIONS';
+import connectorService from '../services/connectorService';
 
 /**
  * Hook to fetch all connectors with optional filters
@@ -12,7 +13,7 @@ export const useConnectorsQuery = (filters?: ConnectorFilters) => {
   return useQuery({
     queryKey: [COLLECTIONS.RESOURCES, filters],
     queryFn: () =>
-      resourcesService.fetchConnectors(
+      connectorService.fetchConnectors(
         filters ? ({ ...filters } as Record<string, string | number | boolean | Date>) : undefined
       ),
   });
@@ -26,8 +27,8 @@ export const useConnectorsAndProductsQuery = () => {
     queryKey: ['connectors-and-products'],
     queryFn: async () => {
       const [files, products] = await Promise.all([
-        resourcesService.fetchFileConnectors(),
-        resourcesService.fetchProducts(),
+        connectorService.fetchFileConnectors(),
+        connectorService.fetchProducts(),
       ]);
       return { files, products };
     },
@@ -40,7 +41,7 @@ export const useConnectorsAndProductsQuery = () => {
 export const useConnectorQuery = (id: string) => {
   return useQuery({
     queryKey: [COLLECTIONS.RESOURCES, id],
-    queryFn: () => resourcesService.fetchConnectorById(id),
+    queryFn: () => connectorService.fetchConnectorById(id),
     enabled: !!id,
   });
 };
@@ -51,7 +52,7 @@ export const useConnectorQuery = (id: string) => {
 export const useConnectorsByCreatorQuery = (creatorId: string) => {
   return useQuery({
     queryKey: [COLLECTIONS.RESOURCES, 'by-creator', creatorId],
-    queryFn: () => resourcesService.fetchConnectorsByCreator(creatorId),
+    queryFn: () => connectorService.fetchConnectorsByCreator(creatorId),
     enabled: !!creatorId,
   });
 };
@@ -62,7 +63,7 @@ export const useConnectorsByCreatorQuery = (creatorId: string) => {
 export const useConnectorStatsQuery = () => {
   return useQuery({
     queryKey: [COLLECTIONS.RESOURCES, 'stats'],
-    queryFn: () => resourcesService.getConnectorStats(),
+    queryFn: () => connectorService.getConnectorStats(),
   });
 };
 
@@ -72,7 +73,7 @@ export const useConnectorStatsQuery = () => {
 export const usePopularConnectorsQuery = (limit: number = 10) => {
   return useQuery({
     queryKey: [COLLECTIONS.RESOURCES, 'popular', limit],
-    queryFn: () => resourcesService.getPopularConnectors(limit),
+    queryFn: () => connectorService.getPopularConnectors(limit),
   });
 };
 
@@ -82,7 +83,7 @@ export const usePopularConnectorsQuery = (limit: number = 10) => {
 export const useRecentConnectorsQuery = (limit: number = 10) => {
   return useQuery({
     queryKey: [COLLECTIONS.RESOURCES, 'recent', limit],
-    queryFn: () => resourcesService.getRecentConnectors(limit),
+    queryFn: () => connectorService.getRecentConnectors(limit),
   });
 };
 
@@ -93,7 +94,7 @@ export const useCreateConnectorMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreateConnectorFormValues) => resourcesService.createConnector(data as any),
+    mutationFn: (data: CreateConnectorFormValues) => connectorService.createConnector(data as any),
 
     onSuccess: (newConnector) => {
       queryClient.invalidateQueries({ queryKey: [COLLECTIONS.RESOURCES] });
@@ -101,7 +102,7 @@ export const useCreateConnectorMutation = () => {
       queryClient.invalidateQueries({ queryKey: [COLLECTIONS.RESOURCES, 'recent'] });
       queryClient.invalidateQueries({ queryKey: [COLLECTIONS.RESOURCES, 'popular'] });
 
-      toast.success(`Connector "${newConnector.title}" created successfully`);
+      toast.success(`Connector "${newConnector.data?.title}" created successfully`);
     },
 
     onError: (err: any) => {
@@ -116,7 +117,7 @@ export const useCreateConnectorMutation = () => {
 export const useCreateProductMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: any) => resourcesService.createProduct(data),
+    mutationFn: (data: any) => connectorService.createProduct(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['connectors-and-products'] });
       toast.success('Catalog product added successfully');
@@ -135,15 +136,15 @@ export const useUpdateConnectorMutation = () => {
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateConnectorFormValues }) =>
-      resourcesService.updateConnector(id, data as any),
+      connectorService.updateConnector(id, data as any),
 
     onSuccess: (updatedConnector) => {
       queryClient.invalidateQueries({ queryKey: [COLLECTIONS.RESOURCES] });
-      queryClient.invalidateQueries({ queryKey: [COLLECTIONS.RESOURCES, updatedConnector.id] });
+      queryClient.invalidateQueries({ queryKey: [COLLECTIONS.RESOURCES, updatedConnector.data?.id] });
       queryClient.invalidateQueries({ queryKey: [COLLECTIONS.RESOURCES, 'recent'] });
       queryClient.invalidateQueries({ queryKey: [COLLECTIONS.RESOURCES, 'popular'] });
 
-      toast.success(`Connector "${updatedConnector.title}" updated successfully`);
+      toast.success(`Connector "${updatedConnector.data?.title}" updated successfully`);
     },
 
     onError: (err: any) => {
@@ -159,7 +160,7 @@ export const useDeleteConnectorMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => resourcesService.deleteConnector(id),
+    mutationFn: (id: string) => connectorService.deleteConnector(id),
 
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: [COLLECTIONS.RESOURCES] });
@@ -184,7 +185,7 @@ export const useDeleteConnectorMutation = () => {
 export const useDeleteProductMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => resourcesService.deleteProduct(id),
+    mutationFn: (id: string) => connectorService.deleteProduct(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['connectors-and-products'] });
       toast.success('Product deleted from catalog');
@@ -202,15 +203,15 @@ export const useIncrementDownloadsMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => resourcesService.incrementDownloads(id),
+    mutationFn: (id: string) => connectorService.incrementDownloads(id),
 
     onSuccess: (updatedConnector) => {
       queryClient.invalidateQueries({ queryKey: [COLLECTIONS.RESOURCES] });
-      queryClient.invalidateQueries({ queryKey: [COLLECTIONS.RESOURCES, updatedConnector.id] });
+      queryClient.invalidateQueries({ queryKey: [COLLECTIONS.RESOURCES, updatedConnector.data?.id] });
       queryClient.invalidateQueries({ queryKey: [COLLECTIONS.RESOURCES, 'stats'] });
       queryClient.invalidateQueries({ queryKey: [COLLECTIONS.RESOURCES, 'popular'] });
 
-      toast.success(`Download count incremented for "${updatedConnector.title}"`);
+      toast.success(`Download count incremented for "${updatedConnector.data?.title}"`);
     },
 
     onError: (err: any) => {

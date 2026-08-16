@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -35,7 +34,12 @@ import { COLLECTIONS } from '@/lib/constants/COLLECTIONS';
 export const useCurrentUserQuery = () => {
     return useQuery({
         queryKey: [COLLECTIONS.AUTH, 'me'],
-        queryFn: () => authService.getCurrentUser(),
+
+        queryFn: async () => {
+            const response = await authService.getCurrentUser();
+
+            return response.data;
+        },
     });
 };
 
@@ -52,21 +56,24 @@ export const useRegisterMutation = () => {
             authService.register(data),
 
         onSuccess: (response) => {
-            // If your backend returns the authenticated user,
-            // you can update the current-user cache here.
-            if (response?.user) {
-                queryClient.setQueryData(
-                    [COLLECTIONS.AUTH, 'me'],
-                    response.user
-                );
-            }
+            // if (response.data) {
+            //     queryClient.setQueryData<UserType>(
+            //         [COLLECTIONS.AUTH, 'me'],
+            //         response.data,
+            //     );
+            // }
 
-            toast.success('Account created successfully');
+            toast.success(
+                response.message ||
+                'Account created successfully',
+            );
         },
 
         onError: (err: any) => {
             toast.error(
-                err?.message || 'Failed to create account'
+                err?.response?.data?.message ||
+                err?.message ||
+                'Failed to create account',
             );
         },
     });
@@ -85,30 +92,46 @@ export const useLoginMutation = () => {
             authService.login(data),
 
         onSuccess: (response) => {
-            // If login response contains the user,
-            // immediately populate the current-user cache.
-            if (response?.user) {
-                sessionStorage.setItem(
-                    'access_token',
-                    response.accessToken
+            const tokenResponse = response.data;
+
+            console.log('Login successful:', tokenResponse);
+
+            if (!tokenResponse?.access_token) {
+
+                toast.error(
+                    'Login succeeded but access token was not returned.',
                 );
-                queryClient.setQueryData(
-                    [COLLECTIONS.AUTH, 'me'],
-                    response.user
-                );
-            } else {
-                // Otherwise let useCurrentUserQuery fetch it.
-                queryClient.invalidateQueries({
-                    queryKey: [COLLECTIONS.AUTH, 'me'],
-                });
+                return;
             }
 
-            toast.success('Login successful');
+            /*
+             * Do NOT store the JWT in sessionStorage/localStorage
+             * if your architecture requires the token to exist
+             * only in memory.
+             *
+             * Store it in your auth state/store here.
+             *
+             * Example:
+             *
+             * authStore.setAccessToken(
+             *     tokenResponse.access_token
+             * );
+             */
+
+            queryClient.invalidateQueries({
+                queryKey: [COLLECTIONS.AUTH, 'me'],
+            });
+
+            toast.success(
+                response.message || 'Login successful',
+            );
         },
 
         onError: (err: any) => {
             toast.error(
-                err?.message || 'Invalid email or password'
+                err?.response?.data?.message ||
+                err?.message ||
+                'Invalid username or password',
             );
         },
     });
@@ -123,25 +146,38 @@ export const useLogoutMutation = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: () => authService.logout(),
+        mutationFn: () =>
+            authService.logout(),
 
-        onSuccess: async () => {
-            // Remove the current authenticated user.
+        onSuccess: (response) => {
+            // Remove current authenticated user.
             queryClient.setQueryData(
                 [COLLECTIONS.AUTH, 'me'],
-                null
+                null,
             );
 
-            // Clear all cached server data belonging
-            // to the authenticated user.
+            // Clear cached authenticated data.
             queryClient.clear();
 
-            toast.success('Logged out successfully');
+            /*
+             * Also clear the access token from your
+             * in-memory auth store here.
+             *
+             * Example:
+             *
+             * authStore.clearAccessToken();
+             */
+
+            toast.success(
+                response.message || 'Logged out successfully',
+            );
         },
 
         onError: (err: any) => {
             toast.error(
-                err?.message || 'Failed to logout'
+                err?.response?.data?.message ||
+                err?.message ||
+                'Failed to logout',
             );
         },
     });
@@ -160,37 +196,24 @@ export const useVerifyOtpMutation = () => {
             authService.verifyOtp(data),
 
         onSuccess: (response) => {
-            if (response?.user) {
-                queryClient.setQueryData(
-                    [COLLECTIONS.AUTH, 'me'],
-                    response.user
-                );
-            }
+            // if (response.data) {
+            //     queryClient.setQueryData<UserType>(
+            //         [COLLECTIONS.AUTH, 'me'],
+            //         response.data,
+            //     );
+            // }
 
-            toast.success('OTP verified successfully');
-        },
-
-        onError: (err: any) => {
-            toast.error(
-                err?.message || 'Failed to verify OTP'
+            toast.success(
+                response.message ||
+                'OTP verified successfully',
             );
         },
-    });
-};
-
-
-export const useResendOtpMutation = () => {
-    return useMutation({
-        mutationFn: (data: ResendOtpRequest) =>
-            authService.resendOtp(data),
-
-        onSuccess: () => {
-            toast.success('OTP sent successfully');
-        },
 
         onError: (err: any) => {
             toast.error(
-                err?.message || 'Failed to resend OTP'
+                err?.response?.data?.message ||
+                err?.message ||
+                'Failed to verify OTP',
             );
         },
     });
@@ -198,7 +221,34 @@ export const useResendOtpMutation = () => {
 
 
 // ============================================================
-// Password Reset
+// Resend OTP
+// ============================================================
+
+export const useResendOtpMutation = () => {
+    return useMutation({
+        mutationFn: (data: ResendOtpRequest) =>
+            authService.resendOtp(data),
+
+        onSuccess: (response) => {
+            toast.success(
+                response.message ||
+                'OTP sent successfully',
+            );
+        },
+
+        onError: (err: any) => {
+            toast.error(
+                err?.response?.data?.message ||
+                err?.message ||
+                'Failed to resend OTP',
+            );
+        },
+    });
+};
+
+
+// ============================================================
+// Forgot Password
 // ============================================================
 
 export const useForgotPasswordMutation = () => {
@@ -206,51 +256,72 @@ export const useForgotPasswordMutation = () => {
         mutationFn: (data: ForgotPasswordRequest) =>
             authService.forgotPassword(data),
 
-        onSuccess: () => {
+        onSuccess: (response) => {
             toast.success(
-                'Password reset instructions sent successfully'
+                response.message ||
+                'Password reset instructions sent successfully',
             );
         },
 
         onError: (err: any) => {
             toast.error(
-                err?.message || 'Failed to process password reset'
+                err?.response?.data?.message ||
+                err?.message ||
+                'Failed to process password reset',
             );
         },
     });
 };
 
+
+// ============================================================
+// Reset Password
+// ============================================================
 
 export const useResetPasswordMutation = () => {
     return useMutation({
         mutationFn: (data: ResetPasswordRequest) =>
             authService.resetPassword(data),
 
-        onSuccess: () => {
-            toast.success('Password reset successfully');
+        onSuccess: (response) => {
+            toast.success(
+                response.message ||
+                'Password reset successfully',
+            );
         },
 
         onError: (err: any) => {
             toast.error(
-                err?.message || 'Failed to reset password'
+                err?.response?.data?.message ||
+                err?.message ||
+                'Failed to reset password',
             );
         },
     });
 };
 
 
+// ============================================================
+// Change Password
+// ============================================================
+
 export const useChangePasswordMutation = () => {
     return useMutation({
         mutationFn: (data: ChangePasswordRequest) =>
             authService.changePassword(data),
 
-        onSuccess: () => {
-            toast.success('Password changed successfully');
+        onSuccess: (response) => {
+            toast.success(
+                response.message ||
+                'Password changed successfully',
+            );
         },
 
         onError: (err: any) => {
             toast.error(
-                err?.message || 'Failed to change password'
+                err?.response?.data?.message ||
+                err?.message ||
+                'Failed to change password',
             );
         },
     });
@@ -266,18 +337,27 @@ export const useEnableMfaMutation = () => {
         mutationFn: (data: EnableMfaRequest) =>
             authService.enableMfa(data),
 
-        onSuccess: () => {
-            toast.success('MFA enabled successfully');
+        onSuccess: (response) => {
+            toast.success(
+                response.message ||
+                'MFA enabled successfully',
+            );
         },
 
         onError: (err: any) => {
             toast.error(
-                err?.message || 'Failed to enable MFA'
+                err?.response?.data?.message ||
+                err?.message ||
+                'Failed to enable MFA',
             );
         },
     });
 };
 
+
+// ============================================================
+// Verify MFA
+// ============================================================
 
 export const useVerifyMfaMutation = () => {
     const queryClient = useQueryClient();
@@ -287,24 +367,33 @@ export const useVerifyMfaMutation = () => {
             authService.verifyMfa(data),
 
         onSuccess: (response) => {
-            if (response?.user) {
-                queryClient.setQueryData<UserType>(
-                    [COLLECTIONS.AUTH, 'me'],
-                    response.user
-                );
-            }
+            // if (response.data) {
+            //     queryClient.setQueryData<UserType | null>(
+            //         [COLLECTIONS.AUTH, 'me'],
+            //         response.data,
+            //     );
+            // }
 
-            toast.success('MFA verified successfully');
+            toast.success(
+                response.message ||
+                'MFA verified successfully',
+            );
         },
 
         onError: (err: any) => {
             toast.error(
-                err?.message || 'Failed to verify MFA'
+                err?.response?.data?.message ||
+                err?.message ||
+                'Failed to verify MFA',
             );
         },
     });
 };
 
+
+// ============================================================
+// Disable MFA
+// ============================================================
 
 export const useDisableMfaMutation = () => {
     const queryClient = useQueryClient();
@@ -313,19 +402,23 @@ export const useDisableMfaMutation = () => {
         mutationFn: (data: DisableMfaRequest) =>
             authService.disableMfa(data),
 
-        onSuccess: () => {
+        onSuccess: (response) => {
             queryClient.invalidateQueries({
                 queryKey: [COLLECTIONS.AUTH, 'me'],
             });
 
-            toast.success('MFA disabled successfully');
+            toast.success(
+                response.message ||
+                'MFA disabled successfully',
+            );
         },
 
         onError: (err: any) => {
             toast.error(
-                err?.message || 'Failed to disable MFA'
+                err?.response?.data?.message ||
+                err?.message ||
+                'Failed to disable MFA',
             );
         },
     });
 };
-
