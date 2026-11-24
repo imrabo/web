@@ -44,7 +44,9 @@ jobs:
         id: pages
 
       - name: Build Application
-        run: pnpm run build -- --base "${{ steps.pages.outputs.base_path }}/"
+        env:
+          VITE_BASE_PATH: /web/
+        run: pnpm run build
 
       - name: Configure SPA fallback
         run: cp dist/index.html dist/404.html
