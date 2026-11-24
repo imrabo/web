@@ -31,12 +31,10 @@ import PricingPage from "./features/payments/pages/PricingPage"
 function RootPage() {
   const { isAuthenticated } = useAuth()
 
-  // User is logged in
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />
   }
 
-  // User is not logged in
   return <HomePage />
 }
 
@@ -47,12 +45,10 @@ function RootPage() {
 function ProtectedRoute() {
   const { isAuthenticated } = useAuth()
 
-  // Not logged in
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
 
-  // Logged in
   return <AppLayout />
 }
 
@@ -60,103 +56,87 @@ function ProtectedRoute() {
 // ROUTER
 // =====================================================
 
-export const router = createBrowserRouter([
-  // ===================================================
-  // HOME
-  // ===================================================
+export const router = createBrowserRouter(
+  [
+    // HOME
+    {
+      path: "/",
+      element: <RootPage />,
+    },
 
+    // AUTH
+    {
+      path: "/login",
+      element: <LoginPage />,
+    },
+    {
+      path: "/signup",
+      element: <SignupPage />,
+    },
+
+    // LEGAL PAGES
+    {
+      path: "/terms",
+      element: <TermsPage />,
+    },
+    {
+      path: "/privacy",
+      element: <PrivacyPage />,
+    },
+    {
+      path: "/refund-policy",
+      element: <RefundPolicyPage />,
+    },
+
+    // DOCUMENTATION
+    {
+      path: "/docs",
+      children: [
+        {
+          index: true,
+          element: <DocsPage />,
+        },
+        {
+          path: "connectors",
+          element: <ConnectorsPage />,
+        },
+        {
+          path: "http",
+          element: <HttpPage />,
+        },
+        {
+          path: "mcp",
+          element: <McpPage />,
+        },
+        {
+          path: "webhooks",
+          element: <WebHookPage />,
+        },
+      ],
+    },
+
+    // PROTECTED DASHBOARD
+    {
+      element: <ProtectedRoute />,
+      children: [
+        {
+          path: "/dashboard",
+          element: <ChatPage />,
+        },
+        {
+          path: "/graph",
+          element: <GraphPage />,
+        },
+      ],
+    },
+
+    // PRICING
+    {
+      path: "/pricing",
+      element: <PricingPage />,
+    },
+  ],
   {
-    path: "/",
-    element: <RootPage />,
-  },
-
-  // ===================================================
-  // AUTH
-  // ===================================================
-
-  {
-    path: "/login",
-    element: <LoginPage />,
-  },
-
-  {
-    path: "/signup",
-    element: <SignupPage />,
-  },
-
-  // ===================================================
-  // LEGAL PAGES
-  // ===================================================
-
-  {
-    path: "/terms",
-    element: <TermsPage />,
-  },
-
-  {
-    path: "/privacy",
-    element: <PrivacyPage />,
-  },
-
-  {
-    path: "/refund-policy",
-    element: <RefundPolicyPage />,
-  },
-
-  // ===================================================
-  // DOCUMENTATION
-  // ===================================================
-
-  {
-    path: "/docs",
-    children: [
-      {
-        index: true,
-        element: <DocsPage />,
-      },
-
-      {
-        path: "connectors",
-        element: <ConnectorsPage />,
-      },
-
-      {
-        path: "http",
-        element: <HttpPage />,
-      },
-
-      {
-        path: "mcp",
-        element: <McpPage />,
-      },
-
-      {
-        path: "webhooks",
-        element: <WebHookPage />,
-      },
-    ],
-  },
-
-  // ===================================================
-  // PROTECTED DASHBOARD
-  // ===================================================
-
-  {
-    element: <ProtectedRoute />,
-    children: [
-      {
-        path: "/dashboard",
-        element: <ChatPage />,
-      },
-
-      {
-        path: "/graph",
-        element: <GraphPage />,
-      },
-    ],
-  },
-  {
-    path: "/pricing",
-    element: <PricingPage />,
-  },
-])
+    basename: import.meta.env.BASE_URL.replace(/\/$/, "") || "/",
+  }
+)
