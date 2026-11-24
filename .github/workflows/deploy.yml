@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -31,7 +31,7 @@ jobs:
           version: 10
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: pnpm
@@ -47,12 +47,13 @@ jobs:
         run: pnpm run build -- --base "${{ steps.pages.outputs.base_path }}/"
 
       - name: Upload Build Artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: ./dist
 
   deploy:
     name: Deploy to GitHub Pages
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -63,4 +64,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
