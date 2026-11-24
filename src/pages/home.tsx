@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom"
+
 type Plan = {
   name: string
   price: string
@@ -863,9 +865,9 @@ export default function HomePage() {
         {/* NAVIGATION */}
         <header className="navbar">
           <div className="nav-container">
-            <a href="/" className="logo">
+            <Link to="/" className="logo">
               Imrabo
-            </a>
+            </Link>
 
             <nav className="nav-links">
               <a href="#features">Features</a>
@@ -874,9 +876,9 @@ export default function HomePage() {
             </nav>
 
             <div className="nav-actions">
-              <a href="/login" className="login-button">
+              <Link to="/login" className="login-button">
                 Log in
-              </a>
+              </Link>
 
               <a href="#signup" className="nav-cta">
                 Get Started
@@ -1005,10 +1007,10 @@ export default function HomePage() {
             workflow requires more.
           </p>
 
-          <a href="/signup" className="cta-button">
+          <Link to="/signup" className="cta-button">
             Get Started Free
             <ArrowIcon />
-          </a>
+          </Link>
         </section>
 
         {/* FOOTER */}
@@ -1022,8 +1024,8 @@ export default function HomePage() {
             </div>
 
             <div className="footer-links">
-              <a href="/privacy">Privacy</a>
-              <a href="/terms">Terms</a>
+              <Link to="/privacy">Privacy</Link>
+              <Link to="/terms">Terms</Link>
               <a href="#contact">Contact</a>
             </div>
           </div>
