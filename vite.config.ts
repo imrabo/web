@@ -7,6 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
+
     react(),
     tailwindcss(),
     VitePWA({
@@ -19,6 +20,7 @@ export default defineConfig({
       ],
 
       manifest: {
+       
         name: "Imrabo",
         short_name: "Imrabo",
         description: "AI Agent Platform",
