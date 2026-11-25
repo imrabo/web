@@ -1,46 +1,48 @@
-import { createBrowserRouter, Navigate } from "react-router-dom"
+import { lazy, Suspense } from "react"
+import { createBrowserRouter, Navigate, Outlet } from "react-router-dom"
 
 import AppLayout from "./components/layouts/app-layout"
-
-import ChatPage from "./features/chat/pages/ChatPage"
-import GraphPage from "./features/graph/pages/GraphPage"
-
-import DocsPage from "./pages/DocsPage"
 
 import LoginPage from "./features/auth/pages/LoginPage"
 import SignupPage from "./features/auth/pages/SignupPage"
 
-import HomePage from "./pages/home"
-
-import TermsPage from "./pages/TermsPage"
-import PrivacyPage from "./pages/PrivacyPage"
-import RefundPolicyPage from "./pages/RefundPolicyPage"
-
-import { ConnectorsPage } from "./features/connectors"
-import HttpPage from "./pages/docs/HttpPage"
-import WebHookPage from "./pages/docs/WebHookPage"
-import McpPage from "./pages/docs/McpPage"
-
 import { useAuth } from "./features/auth/hooks/useAuth"
-import PricingPage from "./features/payments/pages/PricingPage"
 
-// =====================================================
-// ROOT PAGE
-// =====================================================
+const ChatPage = lazy(() => import("./features/chat/pages/ChatPage"))
+
+const GraphPage = lazy(() => import("./features/graph/pages/GraphPage"))
+
+const PricingPage = lazy(() => import("./features/payments/pages/PricingPage"))
+
+const ConnectorsPage = lazy(() =>
+  import("./features/connectors").then((module) => ({
+    default: module.ConnectorsPage,
+  }))
+)
+
+function PageLoader() {
+  return (
+    <div className="flex min-h-[50vh] items-center justify-center">
+      Loading...
+    </div>
+  )
+}
+
+function LazyPage({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<PageLoader />}>{children}</Suspense>
+}
 
 function RootPage() {
   const { isAuthenticated } = useAuth()
 
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />
-  }
-
-  return <HomePage />
+  return <Navigate to={isAuthenticated ? "/chat" : "/login"} replace />
 }
 
-// =====================================================
-// PROTECTED ROUTE
-// =====================================================
+function GuestRoute() {
+  const { isAuthenticated } = useAuth()
+
+  return isAuthenticated ? <Navigate to="/chat" replace /> : <Outlet />
+}
 
 function ProtectedRoute() {
   const { isAuthenticated } = useAuth()
@@ -52,88 +54,59 @@ function ProtectedRoute() {
   return <AppLayout />
 }
 
-// =====================================================
-// ROUTER
-// =====================================================
-
 export const router = createBrowserRouter(
   [
-    // HOME
     {
       path: "/",
       element: <RootPage />,
     },
-
-    // AUTH
     {
-      path: "/login",
-      element: <LoginPage />,
-    },
-    {
-      path: "/signup",
-      element: <SignupPage />,
-    },
-
-    // LEGAL PAGES
-    {
-      path: "/terms",
-      element: <TermsPage />,
-    },
-    {
-      path: "/privacy",
-      element: <PrivacyPage />,
-    },
-    {
-      path: "/refund-policy",
-      element: <RefundPolicyPage />,
-    },
-
-    // DOCUMENTATION
-    {
-      path: "/docs",
+      element: <GuestRoute />,
       children: [
-        {
-          index: true,
-          element: <DocsPage />,
-        },
-        {
-          path: "connectors",
-          element: <ConnectorsPage />,
-        },
-        {
-          path: "http",
-          element: <HttpPage />,
-        },
-        {
-          path: "mcp",
-          element: <McpPage />,
-        },
-        {
-          path: "webhooks",
-          element: <WebHookPage />,
-        },
+        { path: "login", element: <LoginPage /> },
+        { path: "signup", element: <SignupPage /> },
       ],
     },
-
-    // PROTECTED DASHBOARD
+    {
+      path: "pricing",
+      element: (
+        <LazyPage>
+          <PricingPage />
+        </LazyPage>
+      ),
+    },
     {
       element: <ProtectedRoute />,
       children: [
         {
-          path: "/dashboard",
-          element: <ChatPage />,
+          path: "chat",
+          element: (
+            <LazyPage>
+              <ChatPage />
+            </LazyPage>
+          ),
         },
         {
-          path: "/graph",
-          element: <GraphPage />,
+          path: "graph",
+          element: (
+            <LazyPage>
+              <GraphPage />
+            </LazyPage>
+          ),
+        },
+        {
+          path: "connectors",
+          element: (
+            <LazyPage>
+              <ConnectorsPage />
+            </LazyPage>
+          ),
         },
       ],
     },
-
-    // PRICING
     {
-      path: "/pricing",
-      element: <PricingPage />,
+      path: "*",
+      element: <Navigate to="/" replace />,
     },
   ],
   {

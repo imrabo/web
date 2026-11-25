@@ -8,6 +8,9 @@ import { VitePWA } from "vite-plugin-pwa"
 // https://vite.dev/config/
 export default defineConfig({
   base: process.env.VITE_BASE_PATH || "/",
+  build: {
+  chunkSizeWarningLimit: 1000,
+},
   plugins: [
     react(),
     tailwindcss(),
