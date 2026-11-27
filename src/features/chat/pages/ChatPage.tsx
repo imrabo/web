@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type KeyboardEvent } from "react"
 import { Link } from "react-router-dom"
-import { ArrowUp, Bot, Check, ChevronDown, Code2, ExternalLink, KeyRound, MessageSquare, ShieldCheck, Sparkles, Users, X } from "lucide-react"
+import { useAuth } from "@/features/auth/hooks/useAuth"
+import { ArrowUp, Bot, Check, ChevronDown, Code2, KeyRound, MessageSquare, ShieldCheck, Sparkles, Users } from "lucide-react"
 
 type Provider = "openai" | "anthropic" | "google" | "compatible"
 type ChatMessage = { role: "user" | "assistant"; content: string }
