@@ -1,6 +1,10 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { Check, Sparkles } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { toast } from "sonner"
+import { useAuth } from "@/features/auth/hooks/useAuth"
+import { paymentService } from "../services/paymentService"
 
 const plans = [
   { id: "free", name: "Free", eyebrow: "Free forever", inr: "₹0", usd: "$0", cadence: "Forever", audience: "For developers exploring ImRabo.", cta: "Start free", href: "/workspace", features: ["Local AI provider configurations", "Bring Your Own API Key", "Local chat and agent execution", "Basic MCP connectors", "Basic agent and sub-agent creation", "Local data storage", "Community support"] },
@@ -11,6 +15,40 @@ const plans = [
 
 export default function PricingPage() {
   const [currency, setCurrency] = useState<"inr" | "usd">("inr")
+  const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null)
+  const { isAuthenticated } = useAuth()
+  const navigate = useNavigate()
+
+  async function choosePlan(planId: string) {
+    if (planId === "free") { navigate("/chat"); return }
+    if (planId === "enterprise") { window.location.href = "https://imrabo.github.io/website/contact/"; return }
+    if (!isAuthenticated) { navigate("/login"); toast.info("Sign in before starting a subscription"); return }
+    setCheckoutPlan(planId)
+    try {
+      if (!(window as Window & { Razorpay?: unknown }).Razorpay) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement("script")
+          script.src = "https://checkout.razorpay.com/v1/checkout.js"
+          script.onload = () => resolve()
+          script.onerror = () => reject(new Error("Unable to load Razorpay checkout"))
+          document.body.appendChild(script)
+        })
+      }
+      const order = await paymentService.createOrder({ planId })
+      const RazorpayCtor = (window as Window & { Razorpay?: new (options: Record<string, unknown>) => { open: () => void } }).Razorpay
+      if (!RazorpayCtor) throw new Error("Razorpay checkout is unavailable")
+      const checkout = new RazorpayCtor({
+        key: order.keyId, amount: order.order.amount, currency: order.order.currency,
+        name: "Imrabo", description: "Subscribe to " + planId + " plan", order_id: order.order.id,
+        handler: async (result: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
+          try { await paymentService.verifyPayment({ planId, ...result }); toast.success("Subscription activated") }
+          catch (error) { toast.error(error instanceof Error ? error.message : "Payment verification failed") }
+        }, theme: { color: "#527da8" },
+      })
+      checkout.open()
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Unable to start checkout") }
+    finally { setCheckoutPlan(null) }
+  }
   return <main className="workspace-shell min-h-screen px-5 py-14 md:px-8">
     <div className="mx-auto max-w-7xl">
       <header className="flex items-center justify-between border-b border-white/10 pb-6">
@@ -25,7 +63,7 @@ export default function PricingPage() {
         {plans.map((plan) => <article key={plan.id} className={`pricing-plan-card relative flex flex-col p-6 md:p-7 ${plan.id === "solo" ? "ring-1 ring-[#7898b8]/60" : ""}`}>
           {plan.id === "solo" && <span className="absolute -top-3 left-6 rounded-full bg-[#527da8] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white">Recommended</span>}
           <p className="text-xs font-medium text-[#8da6bf]">{plan.eyebrow}</p><h2 className="mt-3 text-xl font-semibold text-white">{plan.name}</h2><div className="mt-5 flex min-h-12 items-baseline gap-2"><span className="text-3xl font-semibold tracking-tight text-white">{currency === "inr" ? plan.inr : plan.usd}</span><span className="text-xs text-[#929ba5]">{plan.cadence}</span></div><p className="mt-4 min-h-[52px] text-sm leading-6 text-[#a0a7af]">{plan.audience}</p>
-          <a href={plan.href} className="mt-5 inline-flex w-full justify-center rounded-full bg-white px-4 py-3 text-sm font-medium text-[#111315] transition hover:bg-[#dce7f1]">{plan.cta}</a>
+          <button type="button" disabled={checkoutPlan !== null} onClick={() => choosePlan(plan.id)} className="mt-5 inline-flex w-full justify-center rounded-full bg-white px-4 py-3 text-sm font-medium text-[#111315] transition hover:bg-[#dce7f1] disabled:cursor-wait disabled:opacity-60">{checkoutPlan === plan.id ? "Starting checkout…" : plan.cta}</button>
           <p className="mt-7 text-xs font-semibold text-white">Includes:</p><ul className="mt-3 flex-1 space-y-2.5 text-sm leading-6 text-[#929ba5]">{plan.features.map((feature) => <li key={feature} className="flex gap-2.5"><Check className="mt-1 h-3.5 w-3.5 shrink-0 text-[#7898b8]" /><span>{feature}</span></li>)}</ul>
         </article>)}
       </div>
