@@ -23,7 +23,7 @@ function LazyPage({ children }: { children: React.ReactNode }) {
 
 function RootPage() {
   const { isAuthenticated } = useAuth()
-  return <Navigate to={isAuthenticated ? "/chat" : "/workspace"} replace />
+  return <Navigate to={isAuthenticated ? "/chat" : "/chat"} replace />
 }
 
 function GuestRoute() {
@@ -31,13 +31,9 @@ function GuestRoute() {
   return isAuthenticated ? <Navigate to="/chat" replace /> : <Outlet />
 }
 
-function WorkspaceRoute() {
-  return <Outlet />
-}
-
 function ProtectedRoute() {
   const { isAuthenticated } = useAuth()
-  return isAuthenticated ? <AppLayout /> : <Navigate to="/workspace" replace />
+  return isAuthenticated ? <Outlet /> : <Navigate to="/chat" replace />
 }
 
 export const router = createBrowserRouter(
@@ -51,17 +47,23 @@ export const router = createBrowserRouter(
       ],
     },
     {
-      path: "workspace",
-      element: <WorkspaceRoute />,
-      children: [{ index: true, element: <LazyPage><ChatPage /></LazyPage> }],
+      element: <AppLayout />,
+      children: [
+        { path: "chat", element: <LazyPage><ChatPage /></LazyPage> },
+        { path: "workspace", element: <Navigate to="/chat" replace /> },
+        { path: "graph", element: <LazyPage><GraphPage /></LazyPage> },
+        { path: "pricing", element: <LazyPage><PricingPage /></LazyPage> },
+      ],
     },
-    { path: "pricing", element: <LazyPage><PricingPage /></LazyPage> },
     {
       element: <ProtectedRoute />,
       children: [
-        { path: "chat", element: <LazyPage><ChatPage /></LazyPage> },
-        { path: "graph", element: <LazyPage><GraphPage /></LazyPage> },
-        { path: "connectors", element: <LazyPage><ConnectorsPage /></LazyPage> },
+        {
+          element: <AppLayout />,
+          children: [
+            { path: "connectors", element: <LazyPage><ConnectorsPage /></LazyPage> },
+          ],
+        },
       ],
     },
     { path: "*", element: <Navigate to="/" replace /> },
