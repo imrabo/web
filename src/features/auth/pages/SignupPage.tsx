@@ -1,2 +1,2 @@
 import {Navigate} from "react-router-dom";
-export default function SignupPage(){return <Navigate to="/login" replace/>}
+export default function SignupPage(){return <Navigate to="/login?mode=register" replace/>}
