@@ -13,9 +13,9 @@ export const resourcesService={
  async getPopularConnectors(limit=10){return (await this.fetchConnectors()).slice(0,limit)},
  async getRecentConnectors(limit=10){return (await this.fetchConnectors()).slice(0,limit)},
  async fetchFileConnectors(){return []},async fetchProducts(){return []},
- async createProduct(){throw new Error("Products are not part of the backend connector API")},
- async updateProduct(){throw new Error("Products are not part of the backend connector API")},
- async deleteProduct(){throw new Error("Products are not part of the backend connector API")},
- async incrementDownloads(){throw new Error("Download tracking is not part of the backend connector API")},
+ async createProduct(_data: unknown): Promise<StoreProduct>{throw new Error("Products are not part of the backend connector API")},
+ async updateProduct(_id: string, _data: Partial<StoreProduct>): Promise<StoreProduct>{throw new Error("Products are not part of the backend connector API")},
+ async deleteProduct(_id: string): Promise<void>{throw new Error("Products are not part of the backend connector API")},
+ async incrementDownloads(_id: string): Promise<Connector>{throw new Error("Download tracking is not part of the backend connector API")},
 };
 export default resourcesService;
