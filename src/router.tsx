@@ -32,7 +32,7 @@ function GuestRoute() {
 }
 
 function WorkspaceRoute() {
-  return <AppLayout />
+  return <Outlet />
 }
 
 function ProtectedRoute() {
@@ -53,9 +53,7 @@ export const router = createBrowserRouter(
     {
       path: "workspace",
       element: <WorkspaceRoute />,
-      children: [
-        { index: true, element: <LazyPage><ChatPage /></LazyPage> },
-      ],
+      children: [{ index: true, element: <LazyPage><ChatPage /></LazyPage> }],
     },
     { path: "pricing", element: <LazyPage><PricingPage /></LazyPage> },
     {
