@@ -5,11 +5,11 @@ import { ArrowUp, Bot, Check, ChevronDown, Code2, ExternalLink, KeyRound, Messag
 type Provider = "openai" | "anthropic" | "google" | "compatible"
 type ChatMessage = { role: "user" | "assistant"; content: string }
 
-const providerOptions: { id: Provider; label: string; defaultModel: string }[] = [
-  { id: "openai", label: "OpenAI", defaultModel: "gpt-4.1" },
-  { id: "anthropic", label: "Anthropic", defaultModel: "claude-sonnet-4-5" },
-  { id: "google", label: "Google Gemini", defaultModel: "gemini-2.5-flash" },
-  { id: "compatible", label: "OpenAI-compatible", defaultModel: "your-model-id" },
+const providerOptions: { id: Provider; label: string }[] = [
+  { id: "openai", label: "OpenAI" },
+  { id: "anthropic", label: "Anthropic" },
+  { id: "google", label: "Google Gemini" },
+  { id: "compatible", label: "OpenAI-compatible" },
 ]
 
 const suggestions = [
@@ -57,8 +57,8 @@ async function requestCompletion(args: {
       messages: messages.map((message) => ({ role: message.role === "assistant" ? "assistant" : "user", content: message.content })),
     }
   } else if (provider === "google") {
-    url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`
-    headers = { "content-type": "application/json" }
+    url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`
+    headers = { "content-type": "application/json", "x-goog-api-key": apiKey }
     body = {
       contents: messages.map((message) => ({
         role: message.role === "assistant" ? "model" : "user",
@@ -84,7 +84,7 @@ async function requestCompletion(args: {
   const data: unknown = await response.json().catch(() => undefined)
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(data, `Provider request failed (HTTP ${response.status}). Check your key, model and provider access settings.`))
+    throw new Error(getErrorMessage(data, `Provider request failed (HTTP ${response.status}). Check your key, model ID and provider access settings.`))
   }
 
   let content = ""
@@ -109,9 +109,10 @@ async function requestCompletion(args: {
 }
 
 export default function ChatPage() {
+  const { isAuthenticated, user } = useAuth()
   const [provider, setProvider] = useState<Provider>("openai")
   const [apiKey, setApiKey] = useState("")
-  const [model, setModel] = useState(providerOptions[0].defaultModel)
+  const [model, setModel] = useState("")
   const [baseUrl, setBaseUrl] = useState("https://api.openai.com/v1")
   const [showSettings, setShowSettings] = useState(true)
   const [prompt, setPrompt] = useState("")
@@ -121,7 +122,7 @@ export default function ChatPage() {
 
   const changeProvider = (next: Provider) => {
     setProvider(next)
-    setModel(providerOptions.find((option) => option.id === next)?.defaultModel ?? "")
+    setModel("")
     if (next === "compatible") setBaseUrl("https://api.openai.com/v1")
   }
 
@@ -129,6 +130,11 @@ export default function ChatPage() {
     event?.preventDefault()
     const text = prompt.trim()
     if (!text || isSending) return
+    if (!model.trim()) {
+      setShowSettings(true)
+      setNotice("Enter a model ID enabled for your provider API key.")
+      return
+    }
     if (!apiKey.trim()) {
       setShowSettings(true)
       setNotice("Add your provider API key before sending a message.")
@@ -176,9 +182,9 @@ export default function ChatPage() {
             <span className="text-sm font-semibold tracking-tight">imrabo <span className="font-normal text-white/40">/ workspace</span></span>
           </Link>
           <div className="flex items-center gap-2">
-            <span className="hidden rounded-full border border-emerald-300/20 bg-emerald-300/[.07] px-3 py-1.5 text-[11px] font-medium text-emerald-200 sm:inline-flex">Guest · Free BYOK</span>
+            {isAuthenticated ? <span className="hidden rounded-full border border-white/10 bg-white/[.05] px-3 py-1.5 text-[11px] font-medium text-white/65 sm:inline-flex">{user?.fullName ?? "Signed in"}</span> : <span className="hidden rounded-full border border-emerald-300/20 bg-emerald-300/[.07] px-3 py-1.5 text-[11px] font-medium text-emerald-200 sm:inline-flex">Guest · Free BYOK</span>}
             <Link to="/pricing" className="workspace-button px-3 py-2 text-xs font-medium text-white/75">Plans</Link>
-            <Link to="/login" className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-[#101214] hover:bg-[#dce7f1]">Sign in</Link>
+            {!isAuthenticated && <Link to="/login" className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-[#101214] hover:bg-[#dce7f1]">Sign in</Link>}
           </div>
         </header>
 
@@ -209,7 +215,7 @@ export default function ChatPage() {
 
             {showSettings && <div className="grid gap-3 border-b border-white/10 px-2 py-4 md:grid-cols-2">
               <label className="text-xs text-white/60">Provider<select value={provider} onChange={(event) => changeProvider(event.target.value as Provider)} className="mt-2 w-full rounded-xl border border-white/10 bg-[#0b0c0e] px-3 py-2.5 text-sm text-white outline-none focus:border-[#668db4]"><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="google">Google Gemini</option><option value="compatible">OpenAI-compatible API</option></select></label>
-              <label className="text-xs text-white/60">Model ID<input required value={model} onChange={(event) => setModel(event.target.value)} placeholder="Enter provider model ID" className="mt-2 w-full rounded-xl border border-white/10 bg-[#0b0c0e] px-3 py-2.5 text-sm text-white outline-none focus:border-[#668db4]" /></label>
+              <label className="text-xs text-white/60">Model ID<input required value={model} onChange={(event) => setModel(event.target.value)} placeholder="Enter a model ID enabled for your API key" className="mt-2 w-full rounded-xl border border-white/10 bg-[#0b0c0e] px-3 py-2.5 text-sm text-white outline-none focus:border-[#668db4]" /></label>
               {provider === "compatible" && <label className="text-xs text-white/60 md:col-span-2">API base URL<input required type="url" value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="https://your-provider.example/v1" className="mt-2 w-full rounded-xl border border-white/10 bg-[#0b0c0e] px-3 py-2.5 text-sm text-white outline-none focus:border-[#668db4]" /></label>}
               <label className="text-xs text-white/60 md:col-span-2">API key<input required type="password" autoComplete="off" spellCheck={false} value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder={`Paste your ${selectedProvider?.label} API key (kept in this page's memory)`} className="mt-2 w-full rounded-xl border border-white/10 bg-[#0b0c0e] px-3 py-2.5 text-sm text-white outline-none focus:border-[#668db4]" /></label>
               <div className="flex items-start gap-2 text-[11px] leading-5 text-white/40 md:col-span-2"><ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-300/70" />Your key is held in page memory and sent directly to the selected provider. It is not saved to ImRabo or browser storage. Clear it by refreshing or closing this page.</div>
