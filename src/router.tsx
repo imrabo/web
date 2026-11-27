@@ -22,8 +22,7 @@ function LazyPage({ children }: { children: React.ReactNode }) {
 }
 
 function RootPage() {
-  const { isAuthenticated } = useAuth()
-  return <Navigate to={isAuthenticated ? "/chat" : "/chat"} replace />
+  return <Navigate to="/chat" replace />
 }
 
 function GuestRoute() {
