@@ -22,46 +22,47 @@ function LazyPage({ children }: { children: React.ReactNode }) {
 }
 
 function RootPage() {
-  const { isAuthenticated } = useAuth()
-  return <Navigate to={isAuthenticated ? "/chat" : "/workspace"} replace />
+  return <Navigate to="/chat" replace />
 }
 
-function GuestRoute() {
+function GuestOnlyRoute() {
   const { isAuthenticated } = useAuth()
   return isAuthenticated ? <Navigate to="/chat" replace /> : <Outlet />
 }
 
-function WorkspaceRoute() {
-  return <Outlet />
-}
-
-function ProtectedRoute() {
+function AccountRoute() {
   const { isAuthenticated } = useAuth()
-  return isAuthenticated ? <AppLayout /> : <Navigate to="/workspace" replace />
+  return isAuthenticated ? <Outlet /> : <Navigate to="/chat" replace />
 }
 
 export const router = createBrowserRouter(
   [
     { path: "/", element: <RootPage /> },
     {
-      element: <GuestRoute />,
+      element: <GuestOnlyRoute />,
       children: [
         { path: "login", element: <LoginPage /> },
         { path: "signup", element: <SignupPage /> },
       ],
     },
     {
-      path: "workspace",
-      element: <WorkspaceRoute />,
-      children: [{ index: true, element: <LazyPage><ChatPage /></LazyPage> }],
-    },
-    { path: "pricing", element: <LazyPage><PricingPage /></LazyPage> },
-    {
-      element: <ProtectedRoute />,
+      element: <AppLayout />,
       children: [
         { path: "chat", element: <LazyPage><ChatPage /></LazyPage> },
+        { path: "workspace", element: <Navigate to="/chat" replace /> },
         { path: "graph", element: <LazyPage><GraphPage /></LazyPage> },
-        { path: "connectors", element: <LazyPage><ConnectorsPage /></LazyPage> },
+        { path: "pricing", element: <LazyPage><PricingPage /></LazyPage> },
+      ],
+    },
+    {
+      element: <AccountRoute />,
+      children: [
+        {
+          element: <AppLayout />,
+          children: [
+            { path: "connectors", element: <LazyPage><ConnectorsPage /></LazyPage> },
+          ],
+        },
       ],
     },
     { path: "*", element: <Navigate to="/" replace /> },
