@@ -1,3 +1,4 @@
+import type { StoreProduct } from "../types";
 import {apiClient} from "@/lib/api/client";
 import type {Connector,ConnectorStats,CreateConnectorInput,UpdateConnectorInput} from "../types/connector.types";
 type BackendConnector={id:number|string;name:string;slug:string;description?:string|null;type:"http"|"mcp"|"webhook";owner_id?:number|null;visibility:string;status:string;enabled:boolean;icon_url?:string|null;version:string;config:Record<string,unknown>;workspace_id?:number|null;created_at:string;updated_at:string};
