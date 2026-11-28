@@ -4,6 +4,7 @@ import { createBrowserRouter, Navigate, Outlet } from "react-router-dom"
 import AppLayout from "./components/layouts/app-layout"
 import LoginPage from "./features/auth/pages/LoginPage"
 import SignupPage from "./features/auth/pages/SignupPage"
+import ForgotPasswordPage from "./features/auth/pages/ForgotPasswordPage"
 import { useAuth } from "./features/auth/hooks/useAuth"
 
 const ChatPage = lazy(() => import("./features/chat/pages/ChatPage"))
@@ -43,6 +44,7 @@ export const router = createBrowserRouter(
       children: [
         { path: "login", element: <LoginPage /> },
         { path: "signup", element: <SignupPage /> },
+        { path: "forgot-password", element: <ForgotPasswordPage /> },
       ],
     },
     {
